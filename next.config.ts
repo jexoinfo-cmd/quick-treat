@@ -3,25 +3,16 @@ import type { NextConfig } from 'next'
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
-    domains: ['cqajbjwgunhroaiqmhiv.supabase.co'],
-    localPatterns: [
+    remotePatterns: [
       {
-        pathname: '/assets/**',
-        search: '',
+        protocol: 'https',
+        hostname: 'cqajbjwgunhroaiqmhiv.supabase.co',
+        pathname: '/**',
       },
     ],
   },
-  // Remove reactCompiler - it doesn't exist in this version
-  // Add transpilePackages if needed
-  transpilePackages: ['@supabase/supabase-js'],
-  // Configure webpack to handle hydration issues
-  webpack: (config) => {
-    config.resolve.fallback = {
-      ...config.resolve.fallback,
-      fs: false,
-    }
-    return config
-  },
+  // Empty turbopack config to satisfy the requirement
+  turbopack: {},
 }
 
 export default nextConfig
