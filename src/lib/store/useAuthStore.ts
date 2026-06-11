@@ -7,9 +7,11 @@ interface AuthState {
   user: User | null
   profile: Profile | null
   isLoading: boolean
+  isHydrated: boolean
   setUser: (user: User | null) => void
   setProfile: (profile: Profile | null) => void
   setLoading: (isLoading: boolean) => void
+  setHydrated: (isHydrated: boolean) => void
   signOut: () => Promise<void>
   signInWithGoogle: () => Promise<void>
 }
@@ -18,9 +20,11 @@ export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   profile: null,
   isLoading: true,
+  isHydrated: false,
   setUser: (user) => set({ user }),
   setProfile: (profile) => set({ profile }),
   setLoading: (isLoading) => set({ isLoading }),
+  setHydrated: (isHydrated) => set({ isHydrated }),
   signOut: async () => {
     await supabase.auth.signOut()
     set({ user: null, profile: null, isLoading: false })
