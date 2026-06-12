@@ -3,12 +3,9 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import AuthModal from '../components/auth/AuthModal'
 
 export default function LandingPage() {
   const router = useRouter()
-  const [selectedRole, setSelectedRole] = useState<'doctor' | 'hospital' | 'patient' | null>(null)
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false)
   const [showDeskModal, setShowDeskModal] = useState(false)
   
   // Dynamic counters
@@ -62,11 +59,24 @@ export default function LandingPage() {
     setShowDeskModal(true)
   }
 
-  // Desk login modal - doctor/hospital select korle register page e pathabe
   const handleDeskRoleSelect = (role: 'doctor' | 'hospital') => {
     setShowDeskModal(false)
-    // Doctor or Hospital register page e redirect korbe
-    router.push(`/doctor-hospital-register?role=${role}`)
+    router.push(`/desk-register?role=${role}`)
+  }
+
+  // Login button handler
+  const handleLoginClick = () => {
+    router.push('/login')
+  }
+
+  // Patient login button handler
+  const handlePatientLogin = () => {
+    router.push('/login')
+  }
+
+  // Register button handler
+  const handleRegisterClick = () => {
+    router.push('/patient-register')
   }
 
   return (
@@ -93,13 +103,13 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-2 sm:gap-4">
             <button 
-              onClick={() => router.push('/login')}
-              className="text-primary hover:text-primary-dark text-sm sm:text-base"
+              onClick={handleLoginClick}
+              className="text-primary hover:text-primary-dark text-sm sm:text-base font-medium"
             >
               Login
             </button>
             <button 
-              onClick={() => router.push('/patient-register')}
+              onClick={handleRegisterClick}
               className="bg-primary text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base hover:bg-primary-dark transition"
             >
               Register
@@ -129,7 +139,7 @@ export default function LandingPage() {
                 Desk Login
               </button>
               <button
-                onClick={() => router.push('/login')}
+                onClick={handlePatientLogin}
                 className="border-2 border-primary text-primary px-6 py-3 rounded-xl font-semibold hover:bg-primary-light transition"
               >
                 Patient Login
@@ -370,13 +380,6 @@ export default function LandingPage() {
           </div>
         </div>
       )}
-
-      {/* Auth Modal */}
-      <AuthModal
-        isOpen={isAuthModalOpen}
-        onClose={() => setIsAuthModalOpen(false)}
-        defaultRole={selectedRole || 'patient'}
-      />
     </div>
   )
 }
