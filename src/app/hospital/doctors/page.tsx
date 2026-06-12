@@ -47,6 +47,58 @@ interface FormData {
   consultation_fee: string
 }
 
+// Specialities list
+const specialities = [
+  'Cardiologist (হৃদরোগ বিশেষজ্ঞ)',
+  'Neurologist (স্নায়ুরোগ বিশেষজ্ঞ)',
+  'Orthopedic (হাড় ও জয়েন্ট)',
+  'Pediatrician (শিশু বিশেষজ্ঞ)',
+  'Gynecologist (স্ত্রীরোগ বিশেষজ্ঞ)',
+  'Dermatologist (চর্ম বিশেষজ্ঞ)',
+  'Psychiatrist (মানসিক রোগ বিশেষজ্ঞ)',
+  'ENT Specialist (কান-নাক-গলা)',
+  'Ophthalmologist (চক্ষু বিশেষজ্ঞ)',
+  'Dentist (দন্ত বিশেষজ্ঞ)',
+  'Urologist (মূত্ররোগ বিশেষজ্ঞ)',
+  'Gastroenterologist (গ্যাস্ট্রো বিশেষজ্ঞ)',
+  'Endocrinologist (এন্ডোক্রাইনোলজিস্ট)',
+  'Nephrologist (কিডনি বিশেষজ্ঞ)',
+  'Oncologist (ক্যান্সার বিশেষজ্ঞ)',
+  'Rheumatologist (বাত ও জয়েন্ট বিশেষজ্ঞ)',
+  'Pulmonologist (ফুসফুস বিশেষজ্ঞ)',
+  'Hematologist (রক্ত বিশেষজ্ঞ)',
+  'Radiologist (রেডিওলজিস্ট)',
+  'Anesthesiologist (এনেস্থেসিওলজিস্ট)'
+]
+
+// Degrees list
+const degrees = [
+  'MBBS',
+  'MD (Medicine)',
+  'MD (Pediatrics)',
+  'MD (Dermatology)',
+  'MD (Psychiatry)',
+  'MS (General Surgery)',
+  'MS (Orthopedics)',
+  'MS (ENT)',
+  'MS (Ophthalmology)',
+  'MS (Obstetrics & Gynecology)',
+  'FCPS (Medicine)',
+  'FCPS (Surgery)',
+  'FCPS (Pediatrics)',
+  'FCPS (Gynecology)',
+  'BDS',
+  'MDS',
+  'PhD',
+  'FRCS',
+  'MRCP',
+  'Diploma in Child Health',
+  'Diploma in Dermatology',
+  'CCD (Cardiology)',
+  'MCPS',
+  'M Phil'
+]
+
 export default function HospitalDoctors() {
   const { profile } = useAuthStore()
   const [doctors, setDoctors] = useState<DisplayDoctor[]>([])
@@ -89,7 +141,7 @@ export default function HospitalDoctors() {
 
         if (error) throw error
         
-        // Helper function to extract profile data safely (inside useEffect)
+        // Helper function to extract profile data safely
         const extractProfileData = (profileData: RawProfile[] | RawProfile | null): RawProfile => {
           if (!profileData) {
             return { name: 'Unknown', email: '', phone: '' }
@@ -100,7 +152,7 @@ export default function HospitalDoctors() {
           return profileData
         }
 
-        // Transform data (inside useEffect, no dependency issue)
+        // Transform data
         const rawData = (data || []) as RawDoctor[]
         const transformedDoctors: DisplayDoctor[] = rawData.map((doc) => {
           const profileData = extractProfileData(doc.profile)
@@ -129,7 +181,7 @@ export default function HospitalDoctors() {
     }
 
     loadDoctors()
-  }, [profile?.id]) // Only depends on profile.id
+  }, [profile?.id])
 
   const handleAddDoctor = async () => {
     if (!formData.name || !formData.email || !formData.speciality) {
@@ -294,60 +346,94 @@ export default function HospitalDoctors() {
         </div>
       )}
 
+      {/* Add Doctor Modal with Dropdowns */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
             <h2 className="text-2xl font-bold mb-4">Add New Doctor</h2>
             <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Full Name *"
-                value={formData.name}
-                onChange={(e) => setFormData({...formData, name: e.target.value})}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <input
-                type="email"
-                placeholder="Email *"
-                value={formData.email}
-                onChange={(e) => setFormData({...formData, email: e.target.value})}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <input
-                type="tel"
-                placeholder="Phone"
-                value={formData.phone}
-                onChange={(e) => setFormData({...formData, phone: e.target.value})}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <input
-                type="text"
-                placeholder="Speciality * (e.g., Cardiologist)"
-                value={formData.speciality}
-                onChange={(e) => setFormData({...formData, speciality: e.target.value})}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <input
-                type="text"
-                placeholder="Degree (e.g., MBBS, FCPS)"
-                value={formData.degree}
-                onChange={(e) => setFormData({...formData, degree: e.target.value})}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <input
-                type="number"
-                placeholder="Experience (years)"
-                value={formData.experience}
-                onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
-              <input
-                type="number"
-                placeholder="Consultation Fee"
-                value={formData.consultation_fee}
-                onChange={(e) => setFormData({...formData, consultation_fee: e.target.value})}
-                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
+              <div>
+                <label className="block text-sm font-medium mb-1">Full Name *</label>
+                <input
+                  type="text"
+                  placeholder="Dr. Md. Rahman"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Email *</label>
+                <input
+                  type="email"
+                  placeholder="doctor@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({...formData, email: e.target.value})}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Phone</label>
+                <input
+                  type="tel"
+                  placeholder="01712-345678"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Speciality *</label>
+                <select
+                  value={formData.speciality}
+                  onChange={(e) => setFormData({...formData, speciality: e.target.value})}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select Speciality</option>
+                  {specialities.map((spec) => (
+                    <option key={spec} value={spec}>{spec}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Degree *</label>
+                <select
+                  value={formData.degree}
+                  onChange={(e) => setFormData({...formData, degree: e.target.value})}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="">Select Degree</option>
+                  {degrees.map((deg) => (
+                    <option key={deg} value={deg}>{deg}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Experience (years)</label>
+                <input
+                  type="number"
+                  placeholder="5"
+                  value={formData.experience}
+                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Consultation Fee (৳)</label>
+                <input
+                  type="number"
+                  placeholder="800"
+                  value={formData.consultation_fee}
+                  onChange={(e) => setFormData({...formData, consultation_fee: e.target.value})}
+                  className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
             </div>
             <div className="flex gap-3 mt-6">
               <button

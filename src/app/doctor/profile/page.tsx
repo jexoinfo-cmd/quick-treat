@@ -10,12 +10,80 @@ interface FormData {
   name: string
   email: string
   phone: string
+  whatsapp: string
   speciality: string
   degree: string
   experience: string
   consultation_fee: string
   about: string
 }
+
+// Specialities list
+const specialities = [
+  'Cardiologist (হৃদরোগ বিশেষজ্ঞ)',
+  'Neurologist (স্নায়ুরোগ বিশেষজ্ঞ)',
+  'Orthopedic (হাড় ও জয়েন্ট)',
+  'Pediatrician (শিশু বিশেষজ্ঞ)',
+  'Gynecologist (স্ত্রীরোগ বিশেষজ্ঞ)',
+  'Dermatologist (চর্ম বিশেষজ্ঞ)',
+  'Psychiatrist (মানসিক রোগ বিশেষজ্ঞ)',
+  'ENT Specialist (কান-নাক-গলা)',
+  'Ophthalmologist (চক্ষু বিশেষজ্ঞ)',
+  'Dentist (দন্ত বিশেষজ্ঞ)',
+  'Urologist (মূত্ররোগ বিশেষজ্ঞ)',
+  'Gastroenterologist (গ্যাস্ট্রো বিশেষজ্ঞ)',
+  'Endocrinologist (এন্ডোক্রাইনোলজিস্ট)',
+  'Nephrologist (কিডনি বিশেষজ্ঞ)',
+  'Oncologist (ক্যান্সার বিশেষজ্ঞ)',
+  'Rheumatologist (বাত ও জয়েন্ট বিশেষজ্ঞ)',
+  'Pulmonologist (ফুসফুস বিশেষজ্ঞ)',
+  'Hematologist (রক্ত বিশেষজ্ঞ)',
+  'Radiologist (রেডিওলজিস্ট)',
+  'Anesthesiologist (এনেস্থেসিওলজিস্ট)',
+  'General Physician (সাধারণ চিকিৎসক)',
+  'Hepatologist (লিভার বিশেষজ্ঞ)',
+  'Infectious Disease Specialist (সংক্রামক রোগ বিশেষজ্ঞ)',
+  'Neonatologist (নবজাতক বিশেষজ্ঞ)',
+  'Neurosurgeon (নিউরোসার্জন)',
+  'Plastic Surgeon (প্লাস্টিক সার্জন)',
+  'Cardiothoracic Surgeon (হার্ট ও বুকের সার্জন)'
+]
+
+// Degrees list
+const degrees = [
+  'MBBS',
+  'MD (Medicine)',
+  'MD (Pediatrics)',
+  'MD (Dermatology)',
+  'MD (Psychiatry)',
+  'MD (Cardiology)',
+  'MD (Neurology)',
+  'MS (General Surgery)',
+  'MS (Orthopedics)',
+  'MS (ENT)',
+  'MS (Ophthalmology)',
+  'MS (Obstetrics & Gynecology)',
+  'FCPS (Medicine)',
+  'FCPS (Surgery)',
+  'FCPS (Pediatrics)',
+  'FCPS (Gynecology)',
+  'BDS',
+  'MDS',
+  'PhD',
+  'FRCS',
+  'MRCP',
+  'Diploma in Child Health',
+  'Diploma in Dermatology',
+  'CCD (Cardiology)',
+  'MCPS',
+  'M Phil',
+  'BAMS (Ayurveda)',
+  'BHMS (Homoeopathy)',
+  'DNB (Diplomate of National Board)',
+  'MCh (Master of Chirurgiae)',
+  'DM (Doctor of Medicine)',
+  'MPH (Master of Public Health)'
+]
 
 export default function DoctorProfile() {
   const { profile } = useAuthStore()
@@ -25,6 +93,7 @@ export default function DoctorProfile() {
     name: '',
     email: '',
     phone: '',
+    whatsapp: '',
     speciality: '',
     degree: '',
     experience: '',
@@ -32,14 +101,24 @@ export default function DoctorProfile() {
     about: ''
   })
 
+  // Load profile data
   useEffect(() => {
-    const fetchProfile = async () => {
+    const loadProfile = async () => {
       if (!profile?.id) {
         setLoading(false)
         return
       }
 
       try {
+        // Fetch profile data directly from profiles table
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('name, email, phone, whatsapp')
+          .eq('id', profile.id)
+          .single()
+
+        if (profileError) throw profileError
+
         // Get doctor info
         const { data: doctor, error: doctorError } = await supabase
           .from('doctors')
@@ -50,9 +129,10 @@ export default function DoctorProfile() {
         if (doctorError) throw doctorError
 
         setFormData({
-          name: profile.name || '',
-          email: profile.email || '',
-          phone: profile.phone || '',
+          name: profileData?.name || '',
+          email: profileData?.email || '',
+          phone: profileData?.phone || '',
+          whatsapp: profileData?.whatsapp || '',
           speciality: doctor?.speciality || '',
           degree: doctor?.degree || '',
           experience: doctor?.experience?.toString() || '',
@@ -67,8 +147,8 @@ export default function DoctorProfile() {
       }
     }
 
-    fetchProfile()
-  }, [profile?.id, profile?.name, profile?.email, profile?.phone])
+    loadProfile()
+  }, [profile?.id])
 
   const handleSave = async () => {
     setSaving(true)
@@ -78,7 +158,8 @@ export default function DoctorProfile() {
         .from('profiles')
         .update({
           name: formData.name,
-          phone: formData.phone
+          phone: formData.phone,
+          whatsapp: formData.whatsapp
         })
         .eq('id', profile?.id)
 
@@ -99,6 +180,7 @@ export default function DoctorProfile() {
       if (doctorError) throw doctorError
 
       toast.success('Profile updated successfully')
+      window.location.reload()
     } catch (error) {
       console.error('Error saving profile:', error)
       toast.error('Failed to update profile')
@@ -131,6 +213,7 @@ export default function DoctorProfile() {
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Email</label>
               <input
@@ -140,8 +223,9 @@ export default function DoctorProfile() {
                 className="w-full px-4 py-2 border border-border rounded-lg bg-gray-50"
               />
             </div>
+
             <div>
-              <label className="block text-sm font-medium mb-1">Phone</label>
+              <label className="block text-sm font-medium mb-1">Phone Number</label>
               <input
                 type="tel"
                 value={formData.phone}
@@ -149,24 +233,45 @@ export default function DoctorProfile() {
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">WhatsApp Number</label>
+              <input
+                type="tel"
+                value={formData.whatsapp}
+                onChange={(e) => setFormData({...formData, whatsapp: e.target.value})}
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Speciality</label>
-              <input
-                type="text"
+              <select
                 value={formData.speciality}
                 onChange={(e) => setFormData({...formData, speciality: e.target.value})}
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
+              >
+                <option value="">Select Speciality</option>
+                {specialities.map((spec) => (
+                  <option key={spec} value={spec}>{spec}</option>
+                ))}
+              </select>
             </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Degree</label>
-              <input
-                type="text"
+              <select
                 value={formData.degree}
                 onChange={(e) => setFormData({...formData, degree: e.target.value})}
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              />
+              >
+                <option value="">Select Degree</option>
+                {degrees.map((deg) => (
+                  <option key={deg} value={deg}>{deg}</option>
+                ))}
+              </select>
             </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Experience (years)</label>
               <input
@@ -176,6 +281,7 @@ export default function DoctorProfile() {
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
+
             <div>
               <label className="block text-sm font-medium mb-1">Consultation Fee (৳)</label>
               <input
@@ -186,6 +292,7 @@ export default function DoctorProfile() {
               />
             </div>
           </div>
+
           <div>
             <label className="block text-sm font-medium mb-1">About (English)</label>
             <textarea

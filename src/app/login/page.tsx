@@ -87,12 +87,6 @@ export default function LoginPage() {
           </div>
           <div className="flex gap-4">
             <button 
-              onClick={() => router.push('/register')}
-              className="text-primary hover:text-primary-dark text-sm sm:text-base"
-            >
-              Register
-            </button>
-            <button 
               onClick={() => router.push('/')}
               className="text-text-grey hover:text-text-dark text-sm sm:text-base"
             >
@@ -159,15 +153,40 @@ export default function LoginPage() {
                 </button>
               </form>
 
+              {/* Patient Registration Link */}
               <div className="mt-6 text-center">
                 <p className="text-text-grey text-sm">
                   Don&apos;t have an account?{' '}
                   <button
-                    onClick={() => router.push('/register')}
+                    onClick={() => router.push('/patient-register')}
                     className="text-primary hover:underline font-medium"
                   >
                     Register here
                   </button>
+                </p>
+              </div>
+
+              {/* Divider */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-border"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white text-text-grey">or</span>
+                </div>
+              </div>
+
+              {/* Desk Registration Link */}
+              <div className="text-center">
+                <button
+                  onClick={() => router.push('/desk-register')}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-2 border-2 border-primary text-primary rounded-lg font-medium hover:bg-primary-light transition"
+                >
+                  <span className="text-xl">🖥️</span>
+                  Desk Registration (Doctor / Hospital)
+                </button>
+                <p className="text-xs text-text-grey mt-2">
+                  Register as a doctor or hospital to start managing patients
                 </p>
               </div>
 
