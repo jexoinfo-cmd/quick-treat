@@ -55,28 +55,26 @@ export default function LandingPage() {
     return () => clearInterval(timer)
   }, [])
 
-  const handleDeskLogin = () => {
+  // Navigation handlers
+  const goToLogin = () => {
+    router.push('/login')
+  }
+
+  const goToRegister = () => {
+    router.push('/patient-register')
+  }
+
+  const goToDeskLogin = () => {
     setShowDeskModal(true)
+  }
+
+  const goToPatientLogin = () => {
+    router.push('/login')
   }
 
   const handleDeskRoleSelect = (role: 'doctor' | 'hospital') => {
     setShowDeskModal(false)
     router.push(`/desk-register?role=${role}`)
-  }
-
-  // Login button handler
-  const handleLoginClick = () => {
-    router.push('/login')
-  }
-
-  // Patient login button handler
-  const handlePatientLogin = () => {
-    router.push('/login')
-  }
-
-  // Register button handler
-  const handleRegisterClick = () => {
-    router.push('/patient-register')
   }
 
   return (
@@ -85,7 +83,6 @@ export default function LandingPage() {
       <nav className="px-4 sm:px-6 lg:px-8 py-4 sm:py-6 sticky top-0 bg-white/90 backdrop-blur-sm z-50 shadow-sm">
         <div className="max-w-7xl mx-auto flex justify-between items-center">
           <div className="flex items-center gap-2 sm:gap-3">
-            {/* Custom Logo */}
             <div className="relative w-10 h-10 sm:w-12 sm:h-12">
               <Image
                 src="/assets/icons/logo.png"
@@ -103,14 +100,14 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-2 sm:gap-4">
             <button 
-              onClick={handleLoginClick}
-              className="text-primary hover:text-primary-dark text-sm sm:text-base font-medium"
+              onClick={goToLogin}
+              className="text-primary hover:text-primary-dark text-sm sm:text-base font-medium cursor-pointer"
             >
               Login
             </button>
             <button 
-              onClick={handleRegisterClick}
-              className="bg-primary text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base hover:bg-primary-dark transition"
+              onClick={goToRegister}
+              className="bg-primary text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base hover:bg-primary-dark transition cursor-pointer"
             >
               Register
             </button>
@@ -133,14 +130,14 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
               <button
-                onClick={handleDeskLogin}
-                className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition"
+                onClick={goToDeskLogin}
+                className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition cursor-pointer"
               >
                 Desk Login
               </button>
               <button
-                onClick={handlePatientLogin}
-                className="border-2 border-primary text-primary px-6 py-3 rounded-xl font-semibold hover:bg-primary-light transition"
+                onClick={goToPatientLogin}
+                className="border-2 border-primary text-primary px-6 py-3 rounded-xl font-semibold hover:bg-primary-light transition cursor-pointer"
               >
                 Patient Login
               </button>
@@ -321,7 +318,7 @@ export default function LandingPage() {
               <div>
                 <h4 className="font-semibold mb-4">For Doctors</h4>
                 <ul className="space-y-2 text-white/70 text-sm">
-                  <li><a href="#" className="hover:text-white transition">Desk Login</a></li>
+                  <li><button onClick={goToDeskLogin} className="hover:text-white transition">Desk Login</button></li>
                   <li><a href="#" className="hover:text-white transition">Resources</a></li>
                   <li><a href="#" className="hover:text-white transition">Help Center</a></li>
                 </ul>
@@ -358,7 +355,7 @@ export default function LandingPage() {
             <div className="space-y-3">
               <button
                 onClick={() => handleDeskRoleSelect('doctor')}
-                className="w-full flex items-center gap-4 p-4 border border-border rounded-xl hover:border-primary hover:bg-primary-light transition"
+                className="w-full flex items-center gap-4 p-4 border border-border rounded-xl hover:border-primary hover:bg-primary-light transition cursor-pointer"
               >
                 <span className="text-3xl">👨‍⚕️</span>
                 <div className="text-left">
@@ -368,7 +365,7 @@ export default function LandingPage() {
               </button>
               <button
                 onClick={() => handleDeskRoleSelect('hospital')}
-                className="w-full flex items-center gap-4 p-4 border border-border rounded-xl hover:border-primary hover:bg-primary-light transition"
+                className="w-full flex items-center gap-4 p-4 border border-border rounded-xl hover:border-primary hover:bg-primary-light transition cursor-pointer"
               >
                 <span className="text-3xl">🏥</span>
                 <div className="text-left">
