@@ -16,9 +16,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     },
   }))
 
-  const { setUser, setProfile, setLoading } = useAuthStore()
+  const { setUser, setProfile, setLoading, setHydrated } = useAuthStore()
 
-  // Move fetchProfile inside useEffect to avoid dependency issues
+  // Move all logic inside useEffect
   useEffect(() => {
     // Define fetchProfile inside useEffect
     const fetchProfile = async (userId: string) => {
@@ -38,6 +38,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
     const initAuth = async () => {
       try {
+        // Clear any stale session
+        await supabase.auth.refreshSession()
+        
         const { data: { session } } = await supabase.auth.getSession()
         setUser(session?.user ?? null)
         
@@ -46,21 +49,25 @@ export function Providers({ children }: { children: React.ReactNode }) {
         }
       } catch (error) {
         console.error('Error initializing auth:', error)
+        // Clear invalid session
+        await supabase.auth.signOut()
       } finally {
         setLoading(false)
+        setHydrated(true)
       }
     }
 
     initAuth()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (event, session) => {
+        console.log('Auth event:', event)
         const user = session?.user ?? null
         setUser(user)
         
-        if (user) {
+        if (user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED')) {
           await fetchProfile(user.id)
-        } else {
+        } else if (event === 'SIGNED_OUT') {
           setProfile(null)
         }
         setLoading(false)
@@ -70,7 +77,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
     return () => {
       subscription.unsubscribe()
     }
-  }, [setUser, setProfile, setLoading]) // No fetchProfile dependency needed now
+  }, [setUser, setProfile, setLoading, setHydrated]) // No fetchProfile dependency needed
 
   return (
     <QueryClientProvider client={queryClient}>

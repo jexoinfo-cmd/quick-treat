@@ -3,26 +3,19 @@ import { createClient } from '@supabase/supabase-js'
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// Check if environment variables are set
-if (!supabaseUrl) {
-  console.warn('NEXT_PUBLIC_SUPABASE_URL is not set. Using placeholder for build.')
-}
-
-if (!supabaseAnonKey) {
-  console.warn('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set. Using placeholder for build.')
-}
-
-// Validate URL format if provided
-if (supabaseUrl) {
-  try {
-    new URL(supabaseUrl)
-  } catch {
-    console.error('Invalid Supabase URL format:', supabaseUrl)
-  }
-}
-
 // For build time safety
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn('⚠️ Supabase environment variables are missing. Please check .env.local')
+}
+
 export const supabase = createClient(
-  supabaseUrl || 'https://placeholder.supabase.co',
-  supabaseAnonKey || 'placeholder'
+  supabaseUrl || 'https://cqajbjwgunhroaiqmhiv.supabase.co',
+  supabaseAnonKey || 'sb_publishable_CkFvI709Wb7Vv7F3t5m94w_uKWpIytj',
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
 )
