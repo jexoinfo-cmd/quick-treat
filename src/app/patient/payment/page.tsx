@@ -1,49 +1,49 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
-import { useAuthStore } from '@/lib/store/useAuthStore'
-import toast from 'react-hot-toast'
+import { Suspense } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/useAuthStore';
+import toast from 'react-hot-toast';
 
 interface Appointment {
-  id: string
-  fee: number
-  appointment_date: string
-  appointment_time: string
-  status: string
+  id: string;
+  fee: number;
+  appointment_date: string;
+  appointment_time: string;
+  status: string;
   doctor: {
-    consultation_fee: number
+    consultation_fee: number;
     profile: {
-      name: string
-    }
-  }
+      name: string;
+    };
+  };
 }
 
-export default function PatientPayment() {
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const { profile } = useAuthStore()
-  const appointmentId = searchParams.get('appointment_id')
-  const [appointment, setAppointment] = useState<Appointment | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [processing, setProcessing] = useState(false)
-  const [platformFeePercent, setPlatformFeePercent] = useState(10)
+// যে কম্পোনেন্টটি useSearchParams ব্যবহার করে, তাকে আলাদা করে Suspense এর ভিতর রাখা হলো
+function PaymentContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { profile } = useAuthStore();
+  const appointmentId = searchParams.get('appointment_id');
+  const [appointment, setAppointment] = useState<Appointment | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [processing, setProcessing] = useState(false);
+  const [platformFeePercent, setPlatformFeePercent] = useState(10);
 
   const fetchPlatformFee = useCallback(async () => {
     const { data } = await supabase
       .from('platform_settings')
       .select('platform_fee_percent')
-      .single()
-    
+      .single();
     if (data) {
-      setPlatformFeePercent(data.platform_fee_percent)
+      setPlatformFeePercent(data.platform_fee_percent);
     }
-  }, [])
+  }, []);
 
   const fetchAppointment = useCallback(async () => {
-    if (!appointmentId) return
-
+    if (!appointmentId) return;
     const { data } = await supabase
       .from('appointments')
       .select(`
@@ -54,23 +54,21 @@ export default function PatientPayment() {
         )
       `)
       .eq('id', appointmentId)
-      .single()
-
-    setAppointment(data)
-    setIsLoading(false)
-  }, [appointmentId])
+      .single();
+    setAppointment(data);
+    setIsLoading(false);
+  }, [appointmentId]);
 
   useEffect(() => {
     const loadData = async () => {
-      await fetchPlatformFee()
-      await fetchAppointment()
-    }
-    loadData()
-  }, [fetchPlatformFee, fetchAppointment])
+      await fetchPlatformFee();
+      await fetchAppointment();
+    };
+    loadData();
+  }, [fetchPlatformFee, fetchAppointment]);
 
   const handlePayment = async () => {
-    setProcessing(true)
-    
+    setProcessing(true);
     const paymentData = {
       amount: appointment?.fee,
       order_id: appointmentId,
@@ -79,35 +77,24 @@ export default function PatientPayment() {
       customer_phone: profile?.phone,
       success_url: `${window.location.origin}/patient/payment-success`,
       cancel_url: `${window.location.origin}/patient/payment-cancel`,
-      fail_url: `${window.location.origin}/patient/payment-fail`
-    }
+      fail_url: `${window.location.origin}/patient/payment-fail`,
+    };
+    console.log('Payment data:', paymentData);
 
-    console.log('Payment data:', paymentData)
-    
-    // Zinipay API call (placeholder - actual API endpoint will be added)
-    // const response = await fetch('https://api.zinipay.com/payment', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(paymentData)
-    // })
-    // const result = await response.json()
-    // window.location.href = result.payment_url
+    toast.success('Payment gateway will be integrated with Zinipay API');
+    setProcessing(false);
+    router.push(`/patient/payment-success?appointment_id=${appointmentId}`);
+  };
 
-    toast.success('Payment gateway will be integrated with Zinipay API')
-    setProcessing(false)
-    
-    router.push(`/patient/payment-success?appointment_id=${appointmentId}`)
-  }
-
-  const platformFee = appointment?.fee ? (appointment.fee * platformFeePercent) / 100 : 0
-  const doctorEarning = appointment?.fee ? appointment.fee - platformFee : 0
+  const platformFee = appointment?.fee ? (appointment.fee * platformFeePercent) / 100 : 0;
+  const doctorEarning = appointment?.fee ? appointment.fee - platformFee : 0;
 
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    )
+    );
   }
 
   if (!appointment) {
@@ -115,7 +102,7 @@ export default function PatientPayment() {
       <div className="flex justify-center items-center h-64">
         <p className="text-text-grey">Appointment not found</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -167,10 +154,17 @@ export default function PatientPayment() {
           {processing ? 'Processing...' : 'Make Payment'}
         </button>
 
-        <p className="text-center text-xs text-text-grey mt-4">
-          Secure payment powered by Zinipay
-        </p>
+        <p className="text-center text-xs text-text-grey mt-4">Secure payment powered by Zinipay</p>
       </div>
     </div>
-  )
+  );
+}
+
+// Main exported component wrapped in Suspense
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+      <PaymentContent />
+    </Suspense>
+  );
 }
