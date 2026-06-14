@@ -1,9 +1,10 @@
-'use client'
+'use client';
 
-import { useRouter } from 'next/navigation'
+import { Suspense } from 'react';
+import { useRouter } from 'next/navigation';
 
-export default function PaymentCancel() {
-  const router = useRouter()
+function PaymentCancelContent() {
+  const router = useRouter();
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-6">
@@ -27,5 +28,13 @@ export default function PaymentCancel() {
         </button>
       </div>
     </div>
-  )
+  );
+}
+
+export default function PaymentCancelPage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+      <PaymentCancelContent />
+    </Suspense>
+  );
 }
