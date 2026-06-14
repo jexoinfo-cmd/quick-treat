@@ -1,5 +1,5 @@
 import { Suspense } from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/useAuthStore';
@@ -30,27 +30,36 @@ function BookAppointmentForm() {
   const [loading, setLoading] = useState(false);
   const [loadingDoctor, setLoadingDoctor] = useState(true);
 
-  // Function declared first
-  async function fetchDoctor() {
+  // Function with useCallback
+  const fetchDoctor = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('doctors')
         .select('*, profile:profiles(name, email, phone)')
         .eq('id', doctorId)
         .single();
-      if (error) throw error;
+      if (error) {
+        console.error('Fetch error:', error);
+        throw error;
+      }
       setDoctor(data);
-    } catch (error) {
+    } catch (err) {
+      console.error('Error fetching doctor:', err);
       toast.error('Failed to load doctor info');
     } finally {
       setLoadingDoctor(false);
     }
-  }
-
-  // useEffect after function declaration
-  useEffect(() => {
-    if (doctorId) fetchDoctor();
   }, [doctorId]);
+
+  // useEffect with proper dependency
+  useEffect(() => {
+    const loadDoctor = async () => {
+      if (doctorId) {
+        await fetchDoctor();
+      }
+    };
+    loadDoctor();
+  }, [doctorId, fetchDoctor]);
 
   async function handleSubmit() {
     if (!selectedDate || !selectedTime) {
@@ -70,7 +79,12 @@ function BookAppointmentForm() {
         .select('is_available, consultation_fee')
         .eq('id', doctorId)
         .single();
-      if (doctorError) throw doctorError;
+      
+      if (doctorError) {
+        console.error('Doctor data error:', doctorError);
+        throw doctorError;
+      }
+      
       if (!doctorData?.is_available) {
         toast.error('Doctor is not available at this time');
         setLoading(false);
@@ -91,10 +105,15 @@ function BookAppointmentForm() {
         .select()
         .single();
 
-      if (appointmentError) throw appointmentError;
+      if (appointmentError) {
+        console.error('Appointment error:', appointmentError);
+        throw appointmentError;
+      }
+      
       toast.success('Please complete payment to confirm appointment');
       router.push(`/patient/payment?appointment_id=${appointment.id}`);
-    } catch (error) {
+    } catch (err) {
+      console.error('Booking error:', err);
       toast.error('Failed to book appointment');
     } finally {
       setLoading(false);
