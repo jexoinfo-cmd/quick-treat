@@ -1,34 +1,38 @@
-'use client'
+'use client';
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase/client'
-import { useAuthStore } from '@/lib/store/useAuthStore'
-import toast from 'react-hot-toast'
+import { Suspense } from 'react';
+import { useState, useEffect, useCallback } from 'react';
+import { useParams, useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase/client';
+import { useAuthStore } from '@/lib/store/useAuthStore';
+import toast from 'react-hot-toast';
 
 interface DoctorProfile {
-  id: string
-  speciality: string
-  degree: string
-  experience: number
-  consultation_fee: number
-  followup_fee: number
-  rating: number
-  about_en: string
-  about_bn: string
+  id: string;
+  speciality: string;
+  degree: string;
+  experience: number;
+  consultation_fee: number;
+  followup_fee: number;
+  rating: number;
+  about_en: string;
+  about_bn: string;
   profile: {
-    name: string
-    email: string
-    phone: string
-  }
+    name: string;
+    email: string;
+    phone: string;
+  };
 }
 
-export default function DoctorProfilePage({ params }: { params: { id: string } }) {
-  const router = useRouter()
-  const { profile } = useAuthStore()
-  const [doctor, setDoctor] = useState<DoctorProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState('info')
+function DoctorProfileContent() {
+  const params = useParams();
+  const router = useRouter();
+  const { profile } = useAuthStore();
+  const doctorId = params?.id as string;
+  
+  const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('info');
 
   // Function with useCallback
   const fetchDoctor = useCallback(async () => {
@@ -39,50 +43,58 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
           *,
           profile:profiles(name, email, phone)
         `)
-        .eq('id', params.id)
-        .single()
+        .eq('id', doctorId)
+        .single();
 
-      if (error) throw error
-      setDoctor(data)
+      if (error) throw error;
+      setDoctor(data);
     } catch (error) {
-      console.error('Error fetching doctor:', error)
-      toast.error('Failed to load doctor profile')
+      console.error('Error fetching doctor:', error);
+      toast.error('Failed to load doctor profile');
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [params.id])
+  }, [doctorId]);
 
   // useEffect with proper dependency
   useEffect(() => {
     const loadDoctor = async () => {
-      await fetchDoctor()
-    }
-    loadDoctor()
-  }, [fetchDoctor])
+      if (doctorId) {
+        await fetchDoctor();
+      }
+    };
+    loadDoctor();
+  }, [doctorId, fetchDoctor]);
 
   const bookAppointment = () => {
     if (!profile) {
-      toast.error('Please login to book appointment')
-      router.push('/')
-      return
+      toast.error('Please login to book appointment');
+      router.push('/login');
+      return;
     }
-    router.push(`/patient/book-appointment?doctorId=${params.id}`)
-  }
+    router.push(`/patient/book-appointment?doctorId=${doctorId}`);
+  };
 
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
       </div>
-    )
+    );
   }
 
   if (!doctor) {
     return (
       <div className="text-center py-12">
         <p className="text-text-grey">Doctor not found</p>
+        <button
+          onClick={() => router.push('/patient/doctors')}
+          className="mt-4 text-primary hover:underline"
+        >
+          Back to Find Doctors
+        </button>
       </div>
-    )
+    );
   }
 
   return (
@@ -94,11 +106,10 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
             <span className="text-4xl">👨‍⚕️</span>
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-teal-dark">{doctor.profile.name}</h1>
+            <h1 className="text-2xl font-bold text-teal-dark">{doctor.profile?.name || 'Doctor'}</h1>
             <p className="text-text-grey">{doctor.degree}</p>
             <p className="text-primary font-medium mt-1">{doctor.speciality}</p>
-            <p className="text-text-grey text-sm mt-2">BMDC No.: Registered</p>
-            <p className="text-text-grey text-sm">Doctor Code: DR{doctor.id.slice(0, 6)}</p>
+            <p className="text-text-grey text-sm mt-2">Doctor Code: DR{doctor.id.slice(0, 6)}</p>
           </div>
           <div className="flex flex-col items-start md:items-end">
             <div className="flex items-center gap-4 mb-2">
@@ -107,23 +118,15 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
                 <p className="text-xs text-text-grey">Years Exp.</p>
               </div>
               <div className="text-center">
-                <p className="text-2xl font-bold text-teal-dark">4+</p>
-                <p className="text-xs text-text-grey">Patients</p>
-              </div>
-              <div className="text-center">
                 <p className="text-2xl font-bold text-teal-dark">{doctor.rating}</p>
                 <p className="text-xs text-text-grey">Rating</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-teal-dark">3+</p>
-                <p className="text-xs text-text-grey">Reviews</p>
               </div>
             </div>
             <button
               onClick={bookAppointment}
               className="bg-primary text-white px-6 py-2 rounded-xl hover:bg-primary-dark transition"
             >
-              Get Consultation
+              Book Appointment
             </button>
           </div>
         </div>
@@ -142,24 +145,14 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
           Info
         </button>
         <button
-          onClick={() => setActiveTab('experience')}
+          onClick={() => setActiveTab('about')}
           className={`px-4 py-2 font-medium transition ${
-            activeTab === 'experience'
+            activeTab === 'about'
               ? 'text-primary border-b-2 border-primary'
               : 'text-text-grey hover:text-teal-dark'
           }`}
         >
-          Experience
-        </button>
-        <button
-          onClick={() => setActiveTab('reviews')}
-          className={`px-4 py-2 font-medium transition ${
-            activeTab === 'reviews'
-              ? 'text-primary border-b-2 border-primary'
-              : 'text-text-grey hover:text-teal-dark'
-          }`}
-        >
-          Reviews
+          About
         </button>
       </div>
 
@@ -167,84 +160,62 @@ export default function DoctorProfilePage({ params }: { params: { id: string } }
       {activeTab === 'info' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl border border-border p-6">
-            <h2 className="text-xl font-semibold text-teal-dark mb-4">Schedule Time & Date</h2>
+            <h2 className="text-xl font-semibold text-teal-dark mb-4">Consultation Info</h2>
+            <div className="space-y-3">
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-text-grey">Consultation Fee</span>
+                <span className="font-bold text-primary text-xl">৳{doctor.consultation_fee}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-text-grey">Follow-up Fee</span>
+                <span className="font-medium">৳{doctor.followup_fee || doctor.consultation_fee - 200}</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-text-grey">Experience</span>
+                <span className="font-medium">{doctor.experience} years</span>
+              </div>
+              <div className="flex justify-between py-2 border-b border-border">
+                <span className="text-text-grey">Degree</span>
+                <span className="font-medium">{doctor.degree}</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-2xl border border-border p-6">
+            <h2 className="text-xl font-semibold text-teal-dark mb-4">Schedule</h2>
             <div className="space-y-2">
               <p className="text-text-grey">Saturday (08:00 PM - 11:30 PM)</p>
               <p className="text-text-grey">Sunday (12:30 PM - 11:00 PM)</p>
-              <p className="text-text-grey">Monday Off</p>
+              <p className="text-text-grey">Monday (Off)</p>
               <p className="text-text-grey">Tuesday (05:30 PM - 11:00 PM)</p>
               <p className="text-text-grey">Wednesday (02:30 PM - 11:55 PM)</p>
               <p className="text-text-grey">Thursday (03:00 PM - 11:45 PM)</p>
               <p className="text-text-grey">Friday (11:00 AM - 10:00 PM)</p>
             </div>
           </div>
-
-          <div className="bg-white rounded-2xl border border-border p-6">
-            <h2 className="text-xl font-semibold text-teal-dark mb-4">Consultation Info</h2>
-            <div className="space-y-3">
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">First Visit Fee</span>
-                <span className="font-medium line-through text-text-grey">৳{doctor.consultation_fee + 200}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">Visit Fee (Discounted)</span>
-                <span className="font-bold text-primary text-xl">৳{doctor.consultation_fee}</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">Avg. Consultation Time</span>
-                <span className="font-medium">15 minutes</span>
-              </div>
-              <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">Joined</span>
-                <span className="font-medium">09 Apr, 2026</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="lg:col-span-2 bg-white rounded-2xl border border-border p-6">
-            <h2 className="text-xl font-semibold text-teal-dark mb-4">About</h2>
-            <p className="text-text-grey leading-relaxed">
-              {doctor.about_en || `ডাঃ ${doctor.profile.name} একজন অভিজ্ঞ ${doctor.speciality} বিশেষজ্ঞ। তিনি ${doctor.experience} বছরের বেশি অভিজ্ঞতা সম্পন্ন একজন চিকিৎসক।`}
-            </p>
-          </div>
         </div>
       )}
 
-      {/* Experience Tab */}
-      {activeTab === 'experience' && (
+      {/* About Tab */}
+      {activeTab === 'about' && (
         <div className="bg-white rounded-2xl border border-border p-6">
-          <div className="space-y-6">
-            <div className="border-b border-border pb-4">
-              <h3 className="font-semibold text-teal-dark">Dhaka Medical College & Hospital</h3>
-              <p className="text-text-grey text-sm">Designation: FCPS (Final Part)</p>
-              <p className="text-text-grey text-sm">Department: Obstetrics and Gynaecology</p>
-              <p className="text-text-grey text-sm">Period: 6 Months (01 Jul, 2023 - Present)</p>
-            </div>
-            <div className="border-b border-border pb-4">
-              <h3 className="font-semibold text-teal-dark">Cumilla Medical College & Hospital</h3>
-              <p className="text-text-grey text-sm">Designation: Honorary Medical Officer</p>
-              <p className="text-text-grey text-sm">Department: Dept of Obstetrics and Gynaecology</p>
-              <p className="text-text-grey text-sm">Period: 11 Months (01 Jul, 2019 - 30 Jun, 2020)</p>
-            </div>
-            <div>
-              <h3 className="font-semibold text-teal-dark">Seba Diagnostic Centre and Hospital</h3>
-              <p className="text-text-grey text-sm">Designation: Senior Medical Officer</p>
-              <p className="text-text-grey text-sm">Department: Dept of Obs and Gyne</p>
-              <p className="text-text-grey text-sm">Period: 2 Years 11 Months (01 Jul, 2020 - 30 Jun, 2023)</p>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Reviews Tab */}
-      {activeTab === 'reviews' && (
-        <div className="bg-white rounded-2xl border border-border p-6">
-          <div className="text-center py-8">
-            <p className="text-text-grey">No reviews yet</p>
-            <p className="text-sm text-text-grey mt-2">Be the first to review this doctor</p>
-          </div>
+          <h2 className="text-xl font-semibold text-teal-dark mb-4">About the Doctor</h2>
+          <p className="text-text-grey leading-relaxed">
+            {doctor.about_en || `ডাঃ ${doctor.profile?.name} একজন অভিজ্ঞ ${doctor.speciality} বিশেষজ্ঞ। 
+            তিনি ${doctor.experience} বছরের বেশি অভিজ্ঞতা সম্পন্ন একজন চিকিৎসক। 
+            তার রোগীদের প্রতি আন্তরিকতা এবং পেশাদারিত্বের জন্য তিনি পরিচিত।`}
+          </p>
         </div>
       )}
     </div>
-  )
+  );
+}
+
+// Main exported component wrapped in Suspense
+export default function DoctorProfilePage() {
+  return (
+    <Suspense fallback={<div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+      <DoctorProfileContent />
+    </Suspense>
+  );
 }
