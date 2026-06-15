@@ -104,7 +104,7 @@ export default function LandingPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="text-center p-4 bg-gray-50 rounded-xl">
-                  <p className="text-text-grey text-sm">Today's Patients</p>
+                  <p className="text-text-grey text-sm">Today&apos;s Patients</p>
                   <p className="text-3xl font-bold text-primary">128</p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-xl">
