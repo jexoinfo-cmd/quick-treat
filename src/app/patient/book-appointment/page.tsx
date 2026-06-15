@@ -18,7 +18,6 @@ interface Doctor {
   profile: { name: string; email: string; phone: string };
 }
 
-// যে কম্পোনেন্টটি useSearchParams ব্যবহার করে, তাকে আলাদা করে Suspense এর ভিতর রাখা হলো
 function BookAppointmentForm() {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -32,7 +31,6 @@ function BookAppointmentForm() {
   const [loading, setLoading] = useState(false);
   const [loadingDoctor, setLoadingDoctor] = useState(true);
 
-  // Function with useCallback
   const fetchDoctor = useCallback(async () => {
     try {
       const { data, error } = await supabase
@@ -40,10 +38,7 @@ function BookAppointmentForm() {
         .select('*, profile:profiles(name, email, phone)')
         .eq('id', doctorId)
         .single();
-      if (error) {
-        console.error('Fetch error:', error);
-        throw error;
-      }
+      if (error) throw error;
       setDoctor(data);
     } catch (err) {
       console.error('Error fetching doctor:', err);
@@ -53,15 +48,26 @@ function BookAppointmentForm() {
     }
   }, [doctorId]);
 
-  // useEffect with proper dependency
   useEffect(() => {
-    const loadDoctor = async () => {
-      if (doctorId) {
-        await fetchDoctor();
-      }
-    };
-    loadDoctor();
+    if (doctorId) fetchDoctor();
   }, [doctorId, fetchDoctor]);
+
+  // ✅ profile load না হওয়া পর্যন্ত wait করো
+  if (profile === undefined || loadingDoctor) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  // ✅ profile null হলে login এ পাঠাও
+  if (profile === null) {
+    router.push('/');
+    return null;
+  }
+
+  if (!doctor) return <div className="text-center py-12 text-text-grey">Doctor not found</div>;
 
   async function handleSubmit() {
     if (!selectedDate || !selectedTime) {
@@ -81,12 +87,9 @@ function BookAppointmentForm() {
         .select('is_available, consultation_fee')
         .eq('id', doctorId)
         .single();
-      
-      if (doctorError) {
-        console.error('Doctor data error:', doctorError);
-        throw doctorError;
-      }
-      
+
+      if (doctorError) throw doctorError;
+
       if (!doctorData?.is_available) {
         toast.error('Doctor is not available at this time');
         setLoading(false);
@@ -107,11 +110,8 @@ function BookAppointmentForm() {
         .select()
         .single();
 
-      if (appointmentError) {
-        console.error('Appointment error:', appointmentError);
-        throw appointmentError;
-      }
-      
+      if (appointmentError) throw appointmentError;
+
       toast.success('Please complete payment to confirm appointment');
       router.push(`/patient/payment?appointment_id=${appointment.id}`);
     } catch (err) {
@@ -121,9 +121,6 @@ function BookAppointmentForm() {
       setLoading(false);
     }
   }
-
-  if (loadingDoctor) return <div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>;
-  if (!doctor) return <div className="text-center py-12 text-text-grey">Doctor not found</div>;
 
   const dates = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -193,7 +190,13 @@ function BookAppointmentForm() {
 
             <div className="mb-6">
               <label className="block text-sm text-text-grey mb-3">Symptoms (Optional)</label>
-              <textarea value={symptoms} onChange={(e) => setSymptoms(e.target.value)} rows={3} className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none" placeholder="Describe your symptoms..." />
+              <textarea
+                value={symptoms}
+                onChange={(e) => setSymptoms(e.target.value)}
+                rows={3}
+                className="w-full px-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary resize-none"
+                placeholder="Describe your symptoms..."
+              />
             </div>
 
             <div className="bg-gray-50 rounded-xl p-4 mb-6">
@@ -205,7 +208,11 @@ function BookAppointmentForm() {
               </div>
             </div>
 
-            <button onClick={handleSubmit} disabled={loading || !selectedDate || !selectedTime} className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed text-lg">
+            <button
+              onClick={handleSubmit}
+              disabled={loading || !selectedDate || !selectedTime}
+              className="w-full bg-primary text-white py-3 rounded-xl font-semibold hover:bg-primary-dark transition disabled:opacity-50 disabled:cursor-not-allowed text-lg"
+            >
               {loading ? 'Processing...' : `Proceed to Payment - ৳${doctor.consultation_fee}`}
             </button>
           </div>
@@ -215,10 +222,13 @@ function BookAppointmentForm() {
   );
 }
 
-// Main exported component wrapped in Suspense
 export default function BookAppointmentPage() {
   return (
-    <Suspense fallback={<div className="flex justify-center items-center h-64"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div></div>}>
+    <Suspense fallback={
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    }>
       <BookAppointmentForm />
     </Suspense>
   );
