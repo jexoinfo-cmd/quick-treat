@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/store/useAuthStore'
@@ -12,9 +12,13 @@ export default function PatientDashboard() {
     appointments: 0,
     prescriptions: 0
   })
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (!profile) {
+    // profile null হলে wait করো, redirect করো না এখনই
+    if (profile === undefined) return
+
+    if (profile === null) {
       router.push('/')
       return
     }
@@ -29,10 +33,23 @@ export default function PatientDashboard() {
         appointments: count || 0,
         prescriptions: 0
       })
+      setLoading(false)
     }
 
     fetchStats()
   }, [profile, router])
+
+  // profile load হচ্ছে
+  if (loading || profile === undefined) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
+
+  // profile নেই
+  if (!profile) return null
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
