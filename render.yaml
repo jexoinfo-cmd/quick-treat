@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: quick-treat
+    runtime: node
+    repo: https://github.com/jexoinfo-cmd/quick-treat
+    plan: free
+    envVars:
+      - key: NEXT_PUBLIC_SUPABASE_URL
+        value: https://cqajbjwgunhroaiqmhiv.supabase.co
+      - key: NEXT_PUBLIC_SUPABASE_ANON_KEY
+        value: sb_publishable_CkFvI709Wb7Vv7F3t5m94w_uKWpIytj
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    autoDeploy: true
+    domains:
+      - quick-treat.onrender.com
