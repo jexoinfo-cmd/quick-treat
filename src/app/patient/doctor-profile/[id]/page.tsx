@@ -1,7 +1,7 @@
 'use client';
 
 import { Suspense } from 'react';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase/client';
 import { useAuthStore } from '@/lib/store/useAuthStore';
@@ -35,48 +35,75 @@ function DoctorProfileContent() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('info');
 
-  const fetchDoctor = useCallback(async () => {
-    try {
-      const { data, error } = await supabase
-        .from('doctors')
-        .select(`
-          *,
-          profile:profiles(name,email,phone)
-        `)
-        .eq('id', doctorId)
-        .maybeSingle();
+  // fetchDoctor ফাংশনটি সরিয়ে দেওয়া হয়েছে কারণ এটি আর ব্যবহৃত হচ্ছে না
 
-      if (error) throw error;
-
-      setDoctor(data);
-    } catch (error) {
-      console.error('Error fetching doctor:', error);
-      toast.error('Failed to load doctor profile');
-    } finally {
-      setLoading(false);
-    }
-  }, [doctorId]);
-
-  // Fixed: Wrapped fetchDoctor call in an async function
   useEffect(() => {
+    let isMounted = true;
+
     const loadDoctor = async () => {
-      if (doctorId) {
-        await fetchDoctor();
+      if (!doctorId) {
+        if (isMounted) setLoading(false);
+        return;
+      }
+
+      try {
+        if (isMounted) setLoading(true);
+        const { data, error } = await supabase
+          .from('doctors')
+          .select(`
+            *,
+            profile:profiles(name,email,phone)
+          `)
+          .eq('id', doctorId)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (isMounted) {
+          if (data) {
+            if (!data.profile) {
+              data.profile = { name: 'ডাক্তার', email: null, phone: null };
+            }
+            setDoctor(data);
+          } else {
+            setDoctor(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching doctor:', error);
+        if (isMounted) {
+          toast.error('ডাক্তারের তথ্য লোড করতে ব্যর্থ হয়েছে');
+          setDoctor(null);
+        }
+      } finally {
+        if (isMounted) setLoading(false);
       }
     };
+
     loadDoctor();
-  }, [doctorId, fetchDoctor]);
+
+    // ক্লিনআপ ফাংশন - কম্পোনেন্ট আনমাউন্ট হলে স্টেট আপডেট প্রতিরোধ করে
+    return () => {
+      isMounted = false;
+    };
+  }, [doctorId]);
 
   const bookAppointment = () => {
     if (!profile) {
-      toast.error('Please login to book appointment');
+      toast.error('অ্যাপয়েন্টমেন্ট বুক করতে লগইন করুন');
       router.push('/login');
+      return;
+    }
+
+    if (!doctorId) {
+      toast.error('ডাক্তার তথ্য পাওয়া যায়নি');
       return;
     }
 
     router.push(`/patient/book-appointment?doctorId=${doctorId}`);
   };
 
+  // লোডিং স্টেট
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -85,20 +112,30 @@ function DoctorProfileContent() {
     );
   }
 
+  // ডাক্তার না পাওয়া গেলে
   if (!doctor) {
     return (
       <div className="text-center py-12">
-        <p className="text-text-grey">Doctor not found</p>
-
+        <p className="text-text-grey">ডাক্তার পাওয়া যায়নি</p>
         <button
           onClick={() => router.push('/patient/doctors')}
           className="mt-4 text-primary hover:underline"
         >
-          Back to Find Doctors
+          ডাক্তার খুঁজতে ফিরে যান
         </button>
       </div>
     );
   }
+
+  // নিরাপদে ডাক্তারের নাম পাওয়া
+  const doctorName = doctor?.profile?.name ?? 'ডাক্তার';
+  const doctorSpeciality = doctor?.speciality ?? 'বিশেষজ্ঞ';
+  const doctorDegree = doctor?.degree ?? 'N/A';
+  const doctorExperience = doctor?.experience ?? 0;
+  const doctorRating = doctor?.rating ?? 0;
+  const doctorConsultationFee = doctor?.consultation_fee ?? 0;
+  const doctorFollowupFee = doctor?.followup_fee ?? Math.max(doctorConsultationFee - 200, 0);
+  const doctorAboutEn = doctor?.about_en ?? `ডাঃ ${doctorName} একজন অভিজ্ঞ ${doctorSpeciality} চিকিৎসক। তিনি ${doctorExperience} বছরের বেশি অভিজ্ঞতা সম্পন্ন একজন চিকিৎসক।`;
 
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
@@ -111,19 +148,19 @@ function DoctorProfileContent() {
 
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-teal-dark">
-              {doctor?.profile?.name ?? 'Doctor'}
+              {doctorName}
             </h1>
 
             <p className="text-text-grey">
-              {doctor.degree || 'N/A'}
+              {doctorDegree}
             </p>
 
             <p className="text-primary font-medium mt-1">
-              {doctor.speciality || 'Specialist'}
+              {doctorSpeciality}
             </p>
 
             <p className="text-text-grey text-sm mt-2">
-              Doctor Code: DR{doctor.id?.slice(0, 6)}
+              ডাক্তার কোড: DR{doctor?.id?.slice(0, 6) ?? '000000'}
             </p>
           </div>
 
@@ -131,16 +168,16 @@ function DoctorProfileContent() {
             <div className="flex items-center gap-4 mb-2">
               <div className="text-center">
                 <p className="text-2xl font-bold text-teal-dark">
-                  {doctor.experience || 0}+
+                  {doctorExperience}+
                 </p>
-                <p className="text-xs text-text-grey">Years Exp.</p>
+                <p className="text-xs text-text-grey">বছর অভিজ্ঞতা</p>
               </div>
 
               <div className="text-center">
                 <p className="text-2xl font-bold text-teal-dark">
-                  {doctor.rating || 0}
+                  {doctorRating}
                 </p>
-                <p className="text-xs text-text-grey">Rating</p>
+                <p className="text-xs text-text-grey">রেটিং</p>
               </div>
             </div>
 
@@ -148,7 +185,7 @@ function DoctorProfileContent() {
               onClick={bookAppointment}
               className="bg-primary text-white px-6 py-2 rounded-xl hover:bg-primary-dark transition"
             >
-              Book Appointment
+              অ্যাপয়েন্টমেন্ট বুক করুন
             </button>
           </div>
         </div>
@@ -164,7 +201,7 @@ function DoctorProfileContent() {
               : 'text-text-grey hover:text-teal-dark'
           }`}
         >
-          Info
+          তথ্য
         </button>
 
         <button
@@ -175,7 +212,7 @@ function DoctorProfileContent() {
               : 'text-text-grey hover:text-teal-dark'
           }`}
         >
-          About
+          বিস্তারিত
         </button>
       </div>
 
@@ -184,35 +221,35 @@ function DoctorProfileContent() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-white rounded-2xl border border-border p-6">
             <h2 className="text-xl font-semibold text-teal-dark mb-4">
-              Consultation Info
+              পরামর্শের তথ্য
             </h2>
 
             <div className="space-y-3">
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">Consultation Fee</span>
+                <span className="text-text-grey">পরামর্শ ফি</span>
                 <span className="font-bold text-primary text-xl">
-                  ৳{doctor.consultation_fee || 0}
+                  ৳{doctorConsultationFee}
                 </span>
               </div>
 
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">Follow-up Fee</span>
+                <span className="text-text-grey">ফলোআপ ফি</span>
                 <span className="font-medium">
-                  ৳{doctor.followup_fee || Math.max((doctor.consultation_fee || 0) - 200, 0)}
+                  ৳{doctorFollowupFee}
                 </span>
               </div>
 
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">Experience</span>
+                <span className="text-text-grey">অভিজ্ঞতা</span>
                 <span className="font-medium">
-                  {doctor.experience || 0} years
+                  {doctorExperience} বছর
                 </span>
               </div>
 
               <div className="flex justify-between py-2 border-b border-border">
-                <span className="text-text-grey">Degree</span>
+                <span className="text-text-grey">ডিগ্রি</span>
                 <span className="font-medium">
-                  {doctor.degree || 'N/A'}
+                  {doctorDegree}
                 </span>
               </div>
             </div>
@@ -220,17 +257,17 @@ function DoctorProfileContent() {
 
           <div className="bg-white rounded-2xl border border-border p-6">
             <h2 className="text-xl font-semibold text-teal-dark mb-4">
-              Schedule
+              সময়সূচী
             </h2>
 
             <div className="space-y-2">
-              <p className="text-text-grey">Saturday (08:00 PM - 11:30 PM)</p>
-              <p className="text-text-grey">Sunday (12:30 PM - 11:00 PM)</p>
-              <p className="text-text-grey">Monday (Off)</p>
-              <p className="text-text-grey">Tuesday (05:30 PM - 11:00 PM)</p>
-              <p className="text-text-grey">Wednesday (02:30 PM - 11:55 PM)</p>
-              <p className="text-text-grey">Thursday (03:00 PM - 11:45 PM)</p>
-              <p className="text-text-grey">Friday (11:00 AM - 10:00 PM)</p>
+              <p className="text-text-grey">শনিবার (০৮:০০ PM - ১১:৩০ PM)</p>
+              <p className="text-text-grey">রবিবার (১২:৩০ PM - ১১:০০ PM)</p>
+              <p className="text-text-grey">সোমবার (বন্ধ)</p>
+              <p className="text-text-grey">মঙ্গলবার (০৫:৩০ PM - ১১:০০ PM)</p>
+              <p className="text-text-grey">বুধবার (০২:৩০ PM - ১১:৫৫ PM)</p>
+              <p className="text-text-grey">বৃহস্পতিবার (০৩:০০ PM - ১১:৪৫ PM)</p>
+              <p className="text-text-grey">শুক্রবার (১১:০০ AM - ১০:০০ PM)</p>
             </div>
           </div>
         </div>
@@ -240,12 +277,11 @@ function DoctorProfileContent() {
       {activeTab === 'about' && (
         <div className="bg-white rounded-2xl border border-border p-6">
           <h2 className="text-xl font-semibold text-teal-dark mb-4">
-            About the Doctor
+            ডাক্তারের সম্পর্কে
           </h2>
 
           <p className="text-text-grey leading-relaxed">
-            {doctor.about_en ||
-              `ডাঃ ${doctor?.profile?.name ?? 'Doctor'} একজন অভিজ্ঞ ${doctor.speciality || 'বিশেষজ্ঞ'} চিকিৎসক। তিনি ${doctor.experience || 0} বছরের বেশি অভিজ্ঞতা সম্পন্ন একজন চিকিৎসক।`}
+            {doctorAboutEn}
           </p>
         </div>
       )}
