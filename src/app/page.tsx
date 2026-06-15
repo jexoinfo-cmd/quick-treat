@@ -6,19 +6,24 @@ import Image from 'next/image'
 export default function LandingPage() {
   const router = useRouter()
 
-  const handleLogin = () => {
+  // Navigation functions
+  const goToLogin = () => {
+    console.log('Navigating to login...')
     router.push('/login')
   }
 
-  const handleRegister = () => {
+  const goToRegister = () => {
+    console.log('Navigating to register...')
     router.push('/patient-register')
   }
 
-  const handleDeskLogin = () => {
+  const goToDeskLogin = () => {
+    console.log('Navigating to desk register...')
     router.push('/desk-register')
   }
 
-  const handlePatientLogin = () => {
+  const goToPatientLogin = () => {
+    console.log('Navigating to patient login...')
     router.push('/login')
   }
 
@@ -45,13 +50,13 @@ export default function LandingPage() {
           </div>
           <div className="flex gap-2 sm:gap-4">
             <button 
-              onClick={handleLogin}
+              onClick={goToLogin}
               className="text-primary hover:text-primary-dark text-sm sm:text-base font-medium cursor-pointer"
             >
               Login
             </button>
             <button 
-              onClick={handleRegister}
+              onClick={goToRegister}
               className="bg-primary text-white px-3 sm:px-4 py-1.5 sm:py-2 rounded-lg text-sm sm:text-base hover:bg-primary-dark transition cursor-pointer"
             >
               Register
@@ -75,13 +80,13 @@ export default function LandingPage() {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4 mt-8">
               <button
-                onClick={handleDeskLogin}
+                onClick={goToDeskLogin}
                 className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition cursor-pointer"
               >
                 Desk Login
               </button>
               <button
-                onClick={handlePatientLogin}
+                onClick={goToPatientLogin}
                 className="border-2 border-primary text-primary px-6 py-3 rounded-xl font-semibold hover:bg-primary-light transition cursor-pointer"
               >
                 Patient Login
@@ -89,7 +94,7 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Dashboard Preview Cards */}
+          {/* Simple Dashboard Preview */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-16">
             <div className="bg-white rounded-2xl shadow-lg p-6 border border-border">
               <div className="bg-teal-light rounded-2xl p-6 text-center">
@@ -99,7 +104,7 @@ export default function LandingPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 mt-4">
                 <div className="text-center p-4 bg-gray-50 rounded-xl">
-                  <p className="text-text-grey text-sm">Today&apos;s Patients</p>
+                  <p className="text-text-grey text-sm">Today's Patients</p>
                   <p className="text-3xl font-bold text-primary">128</p>
                 </div>
                 <div className="text-center p-4 bg-gray-50 rounded-xl">
