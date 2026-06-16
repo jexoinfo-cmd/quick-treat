@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import Image from 'next/image'
@@ -10,6 +10,7 @@ import toast from 'react-hot-toast'
 const navItems = [
   { name: 'Home', href: '/patient/dashboard', icon: '🏠' },
   { name: 'Find Doctors', href: '/patient/doctors', icon: '🔍' },
+  { name: 'Hospitals', href: '/patient/hospitals', icon: '🏥' },
   { name: 'Appointments', href: '/patient/appointments', icon: '📅' },
   { name: 'Profile', href: '/patient/profile', icon: '👤' },
 ]
@@ -19,6 +20,16 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   const router = useRouter()
   const { signOut, profile } = useAuthStore()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768)
+    }
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const handleLogout = async () => {
     await signOut()
@@ -28,31 +39,46 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Mobile Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border lg:hidden">
-        <div className="flex justify-around py-2">
-          {navItems.map((item) => (
-            <Link
-              key={item.name}
-              href={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition ${
-                pathname === item.href
-                  ? 'text-primary'
-                  : 'text-text-grey'
-              }`}
-            >
-              <span className="text-xl">{item.icon}</span>
-              <span className="text-xs">{item.name}</span>
-            </Link>
-          ))}
+      {/* Mobile Header */}
+      <div className="lg:hidden bg-white border-b border-border fixed top-0 left-0 right-0 z-50">
+        <div className="flex justify-between items-center px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="relative w-8 h-8">
+              <Image
+                src="/assets/icons/logo.png"
+                alt="Quick Treat Logo"
+                width={32}
+                height={32}
+                className="rounded-lg object-cover"
+              />
+            </div>
+            <div>
+              <span className="font-bold text-lg">Quick Treat</span>
+              <p className="text-xs text-text-grey hidden sm:block">Patient Portal</p>
+            </div>
+          </div>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 rounded-lg hover:bg-gray-100"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
         </div>
       </div>
 
-      {/* Desktop Sidebar */}
-      <div className="hidden lg:flex">
-        <aside className="fixed left-0 top-0 h-full w-64 bg-white border-r border-border">
-          <div className="p-6">
-            {/* Logo Section */}
+      <div className="flex">
+        {/* Desktop Sidebar */}
+        <aside className={`
+          fixed lg:static inset-y-0 left-0 z-40
+          w-64 bg-white border-r border-border
+          transform transition-transform duration-300 ease-in-out
+          ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          ${isMobile ? 'shadow-xl' : ''}
+        `}>
+          <div className="p-4 lg:p-6 h-full flex flex-col">
+            {/* Logo */}
             <div className="flex items-center gap-2 mb-8">
               <div className="relative w-8 h-8">
                 <Image
@@ -75,103 +101,77 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
             </div>
 
             {/* Navigation */}
-            <nav className="space-y-2">
-              {navItems.map((item) => (
-                <Link
-                  key={item.name}
-                  href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
-                    pathname === item.href
-                      ? 'bg-primary text-white'
-                      : 'text-text-grey hover:bg-teal-light/30'
-                  }`}
-                >
-                  <span className="text-xl">{item.icon}</span>
-                  <span>{item.name}</span>
-                </Link>
-              ))}
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:bg-red-50 transition"
-              >
-                <span className="text-xl">🚪</span>
-                <span>Logout</span>
-              </button>
-            </nav>
-          </div>
-        </aside>
-
-        <main className="ml-64 flex-1">
-          <div className="p-8">
-            {children}
-          </div>
-        </main>
-      </div>
-
-      {/* Mobile Content */}
-      <div className="lg:hidden pb-20">
-        <div className="p-4">
-          {children}
-        </div>
-      </div>
-
-      {/* Mobile Menu (Hamburger) */}
-      {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 lg:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setIsMobileMenuOpen(false)} />
-          <div className="absolute right-0 top-0 h-full w-64 bg-white shadow-xl">
-            <div className="p-4 border-b border-border">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="relative w-8 h-8">
-                    <Image
-                      src="/assets/icons/logo.png"
-                      alt="Quick Treat Logo"
-                      width={32}
-                      height={32}
-                      className="rounded-lg object-cover"
-                    />
-                  </div>
-                  <span className="font-bold text-teal-dark">Quick Treat</span>
-                </div>
-                <button onClick={() => setIsMobileMenuOpen(false)}>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </div>
-              <div className="mt-3">
-                <p className="font-medium text-teal-dark">{profile?.name || 'Patient'}</p>
-                <p className="text-xs text-text-grey">{profile?.email}</p>
-              </div>
-            </div>
-            <nav className="p-4 space-y-2">
+            <nav className="flex-1 space-y-1">
               {navItems.map((item) => (
                 <Link
                   key={item.name}
                   href={item.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition ${
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition ${
                     pathname === item.href
                       ? 'bg-primary text-white'
                       : 'text-text-grey hover:bg-teal-light/30'
                   }`}
                 >
                   <span className="text-xl">{item.icon}</span>
-                  <span>{item.name}</span>
+                  <span className="text-sm lg:text-base">{item.name}</span>
                 </Link>
               ))}
-              <button
-                onClick={handleLogout}
-                className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-error hover:bg-red-50 transition"
-              >
-                <span className="text-xl">🚪</span>
-                <span>Logout</span>
-              </button>
             </nav>
+
+            {/* Logout */}
+            <button
+              onClick={handleLogout}
+              className="mt-4 w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-error hover:bg-red-50 transition"
+            >
+              <span className="text-xl">🚪</span>
+              <span className="text-sm lg:text-base">Logout</span>
+            </button>
           </div>
+        </aside>
+
+        {/* Main Content */}
+        <main className="flex-1 pt-16 lg:pt-0">
+          <div className="p-3 sm:p-4 md:p-6 lg:p-8">
+            {children}
+          </div>
+        </main>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-border lg:hidden">
+        <div className="flex justify-around py-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.name}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition ${
+                pathname === item.href
+                  ? 'text-primary'
+                  : 'text-text-grey'
+              }`}
+            >
+              <span className="text-xl">{item.icon}</span>
+              <span className="text-xs">{item.name}</span>
+            </Link>
+          ))}
         </div>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {isMobileMenuOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
       )}
+
+      {/* Mobile Content Padding */}
+      <div className="lg:hidden pb-20">
+        <div className="p-4">
+          {children}
+        </div>
+      </div>
     </div>
   )
 }
