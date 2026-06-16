@@ -26,6 +26,14 @@ interface Hospital {
   ccu_beds?: number
 }
 
+// জেলার টাইপ
+interface District {
+  id: number
+  name: string
+  division: string
+  created_at?: string
+}
+
 // Supabase থেকে আসা ডেটার জন্য টাইপ
 interface ProfileData {
   name: string
@@ -35,7 +43,6 @@ interface ProfileData {
   upazila: string
 }
 
-// Supabase থেকে আসা raw ডেটার জন্য টাইপ (প্রোফাইল অ্যারে আকারে আসে)
 interface SupabaseHospitalData {
   id: string
   address: string
@@ -49,7 +56,7 @@ interface SupabaseHospitalData {
   emergency_available: boolean
   icu_beds?: number
   ccu_beds?: number
-  profile: ProfileData[] | null // Supabase থেকে অ্যারে আকারে আসে
+  profile: ProfileData[] | null
 }
 
 type BedType = 'general' | 'icu' | 'ccu'
@@ -64,6 +71,7 @@ export default function PatientHospitalsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [districts, setDistricts] = useState<string[]>([])
+  const [allDistricts, setAllDistricts] = useState<string[]>([])
   const [bedType, setBedType] = useState<BedType>('general')
   const [bookingHospital, setBookingHospital] = useState<Hospital | null>(null)
   const [showBookingModal, setShowBookingModal] = useState(false)
@@ -80,6 +88,34 @@ export default function PatientHospitalsPage() {
     has_ambulance: false,
     emergency_available: false,
   })
+
+  // Fetch districts from Supabase
+  useEffect(() => {
+    const fetchDistricts = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('districts')
+          .select('name')
+          .order('name', { ascending: true })
+
+        if (error) {
+          console.error('Error fetching districts:', error)
+          return
+        }
+
+        if (data && data.length > 0) {
+          // এখন any এর পরিবর্তে District টাইপ ব্যবহার করা হয়েছে
+          const districtNames = (data as District[]).map((item: District) => item.name)
+          setAllDistricts(districtNames)
+          console.log('Districts loaded from database:', districtNames)
+        }
+      } catch (err) {
+        console.error('Error fetching districts:', err)
+      }
+    }
+
+    fetchDistricts()
+  }, [])
 
   // Fetch hospitals
   useEffect(() => {
@@ -128,9 +164,7 @@ export default function PatientHospitalsPage() {
           return
         }
 
-        // সঠিক টাইপ ব্যবহার করা হয়েছে
         const formatted: Hospital[] = (data as SupabaseHospitalData[]).map((item: SupabaseHospitalData) => {
-          // প্রোফাইল ডেটা নিরাপদে হ্যান্ডেল করা
           let profileData: ProfileData = {
             name: '',
             email: '',
@@ -139,7 +173,6 @@ export default function PatientHospitalsPage() {
             upazila: ''
           }
           
-          // যদি প্রোফাইল থাকে এবং অ্যারে হয়
           if (item.profile && Array.isArray(item.profile) && item.profile.length > 0) {
             profileData = {
               name: item.profile[0].name || '',
@@ -176,10 +209,13 @@ export default function PatientHospitalsPage() {
         setHospitals(formatted)
         setFilteredHospitals(formatted)
         
-        // ইউনিক জেলা লিস্ট তৈরি করা
         const uniqueDistricts = [...new Set(formatted.map(h => h.district).filter(Boolean))]
-        console.log('Unique districts:', uniqueDistricts)
+        console.log('Unique districts from hospitals:', uniqueDistricts)
         setDistricts(uniqueDistricts)
+        
+        if (allDistricts.length === 0 && uniqueDistricts.length > 0) {
+          setAllDistricts(uniqueDistricts)
+        }
         
       } catch (err) {
         console.error('Error fetching hospitals:', err)
@@ -191,7 +227,7 @@ export default function PatientHospitalsPage() {
     }
 
     fetchHospitals()
-  }, [])
+  }, [allDistricts])
 
   // Apply filters
   const applyFilters = useCallback(() => {
@@ -307,7 +343,6 @@ export default function PatientHospitalsPage() {
       setBookingPatientPhone('')
       setBookingReason('')
       
-      // Refresh hospitals list
       window.location.reload()
     } catch (err) {
       console.error('Booking error:', err)
@@ -359,7 +394,7 @@ export default function PatientHospitalsPage() {
             className="px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           >
             <option value="">সব জেলা</option>
-            {districts.map((d) => (
+            {(allDistricts.length > 0 ? allDistricts : districts).map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
           </select>
