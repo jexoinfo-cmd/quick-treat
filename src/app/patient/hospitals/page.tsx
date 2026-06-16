@@ -26,7 +26,17 @@ interface Hospital {
   ccu_beds?: number
 }
 
-interface RawHospital {
+// Supabase থেকে আসা ডেটার জন্য টাইপ
+interface ProfileData {
+  name: string
+  email: string
+  phone: string
+  district: string
+  upazila: string
+}
+
+// Supabase থেকে আসা raw ডেটার জন্য টাইপ (প্রোফাইল অ্যারে আকারে আসে)
+interface SupabaseHospitalData {
   id: string
   address: string
   is_approved: boolean
@@ -39,13 +49,7 @@ interface RawHospital {
   emergency_available: boolean
   icu_beds?: number
   ccu_beds?: number
-  profile: {
-    name: string
-    email: string
-    phone: string
-    district: string
-    upazila: string
-  } | null
+  profile: ProfileData[] | null // Supabase থেকে অ্যারে আকারে আসে
 }
 
 type BedType = 'general' | 'icu' | 'ccu'
@@ -56,6 +60,7 @@ export default function PatientHospitalsPage() {
   const [hospitals, setHospitals] = useState<Hospital[]>([])
   const [filteredHospitals, setFilteredHospitals] = useState<Hospital[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedDistrict, setSelectedDistrict] = useState('')
   const [districts, setDistricts] = useState<string[]>([])
@@ -66,6 +71,7 @@ export default function PatientHospitalsPage() {
   const [bookingPatientName, setBookingPatientName] = useState('')
   const [bookingPatientPhone, setBookingPatientPhone] = useState('')
   const [bookingReason, setBookingReason] = useState('')
+  const [isBooking, setIsBooking] = useState(false)
 
   const [filters, setFilters] = useState({
     has_icu: false,
@@ -79,6 +85,11 @@ export default function PatientHospitalsPage() {
   useEffect(() => {
     const fetchHospitals = async () => {
       try {
+        setLoading(true)
+        setError(null)
+        
+        console.log('Fetching hospitals...')
+        
         const { data, error } = await supabase
           .from('hospitals')
           .select(`
@@ -94,39 +105,86 @@ export default function PatientHospitalsPage() {
             emergency_available,
             icu_beds,
             ccu_beds,
-            profile:profiles(name, email, phone, district, upazila)
+            profile:profiles!inner(name, email, phone, district, upazila)
           `)
           .eq('is_approved', true)
 
-        if (error) throw error
+        if (error) {
+          console.error('Supabase error:', error)
+          setError(`ডেটা লোড করতে সমস্যা হচ্ছে: ${error.message}`)
+          toast.error('হাসপাতাল লোড করতে সমস্যা হচ্ছে')
+          setLoading(false)
+          return
+        }
 
-        const rawData = data as unknown as RawHospital[]
-        const formatted: Hospital[] = rawData.map((h) => ({
-          id: h.id,
-          name: h.profile?.name || 'Unknown',
-          email: h.profile?.email || '',
-          phone: h.profile?.phone || '',
-          district: h.profile?.district || '',
-          upazila: h.profile?.upazila || '',
-          address: h.address || '',
-          is_approved: h.is_approved,
-          total_beds: h.total_beds || 0,
-          available_beds: h.available_beds || 0,
-          has_icu: h.has_icu || false,
-          has_ccu: h.has_ccu || false,
-          has_oxygen: h.has_oxygen || false,
-          has_ambulance: h.has_ambulance || false,
-          emergency_available: h.emergency_available || false,
-          icu_beds: h.icu_beds || 0,
-          ccu_beds: h.ccu_beds || 0,
-        }))
+        console.log('Raw data:', data)
+
+        if (!data || data.length === 0) {
+          console.log('No hospitals found')
+          setHospitals([])
+          setFilteredHospitals([])
+          setDistricts([])
+          setLoading(false)
+          return
+        }
+
+        // সঠিক টাইপ ব্যবহার করা হয়েছে
+        const formatted: Hospital[] = (data as SupabaseHospitalData[]).map((item: SupabaseHospitalData) => {
+          // প্রোফাইল ডেটা নিরাপদে হ্যান্ডেল করা
+          let profileData: ProfileData = {
+            name: '',
+            email: '',
+            phone: '',
+            district: '',
+            upazila: ''
+          }
+          
+          // যদি প্রোফাইল থাকে এবং অ্যারে হয়
+          if (item.profile && Array.isArray(item.profile) && item.profile.length > 0) {
+            profileData = {
+              name: item.profile[0].name || '',
+              email: item.profile[0].email || '',
+              phone: item.profile[0].phone || '',
+              district: item.profile[0].district || '',
+              upazila: item.profile[0].upazila || ''
+            }
+          }
+          
+          return {
+            id: item.id,
+            name: profileData.name || 'Unknown Hospital',
+            email: profileData.email || '',
+            phone: profileData.phone || '',
+            district: profileData.district || '',
+            upazila: profileData.upazila || '',
+            address: item.address || '',
+            is_approved: item.is_approved || false,
+            total_beds: item.total_beds || 0,
+            available_beds: item.available_beds || 0,
+            has_icu: item.has_icu || false,
+            has_ccu: item.has_ccu || false,
+            has_oxygen: item.has_oxygen || false,
+            has_ambulance: item.has_ambulance || false,
+            emergency_available: item.emergency_available || false,
+            icu_beds: item.icu_beds || 0,
+            ccu_beds: item.ccu_beds || 0,
+          }
+        })
+
+        console.log('Formatted hospitals:', formatted)
 
         setHospitals(formatted)
+        setFilteredHospitals(formatted)
+        
+        // ইউনিক জেলা লিস্ট তৈরি করা
         const uniqueDistricts = [...new Set(formatted.map(h => h.district).filter(Boolean))]
+        console.log('Unique districts:', uniqueDistricts)
         setDistricts(uniqueDistricts)
-      } catch (error) {
-        console.error(error)
-        toast.error('Failed to load hospitals')
+        
+      } catch (err) {
+        console.error('Error fetching hospitals:', err)
+        setError('হাসপাতাল লোড করতে সমস্যা হচ্ছে। দয়া করে আবার চেষ্টা করুন।')
+        toast.error('হাসপাতাল লোড করতে সমস্যা হচ্ছে')
       } finally {
         setLoading(false)
       }
@@ -166,12 +224,25 @@ export default function PatientHospitalsPage() {
 
   async function handleBookBed() {
     if (!profile?.id) {
-      toast.error('Please login first')
+      toast.error('দয়া করে প্রথমে লগইন করুন')
       router.push('/login')
       return
     }
 
-    if (!bookingHospital) return
+    if (!bookingHospital) {
+      toast.error('হাসপাতাল নির্বাচন করুন')
+      return
+    }
+
+    if (!bookingPatientName.trim()) {
+      toast.error('দয়া করে রোগীর নাম লিখুন')
+      return
+    }
+
+    if (!bookingPatientPhone.trim()) {
+      toast.error('দয়া করে রোগীর ফোন নম্বর লিখুন')
+      return
+    }
 
     let availableCount = 0
     if (bookingBedType === 'general') {
@@ -183,9 +254,11 @@ export default function PatientHospitalsPage() {
     }
 
     if (availableCount < 1) {
-      toast.error(`No ${bookingBedType.toUpperCase()} beds available right now`)
+      toast.error(`বর্তমানে ${bookingBedType.toUpperCase()} বেড উপলব্ধ নেই`)
       return
     }
+
+    setIsBooking(true)
 
     try {
       const { error: appointmentError } = await supabase
@@ -195,7 +268,7 @@ export default function PatientHospitalsPage() {
           hospital_id: bookingHospital.id,
           appointment_date: new Date().toISOString().split('T')[0],
           appointment_time: new Date().toLocaleTimeString(),
-          symptoms: `${bookingBedType.toUpperCase()} bed booking - ${bookingReason}`,
+          symptoms: `${bookingBedType.toUpperCase()} bed booking - ${bookingReason || 'No reason provided'}`,
           status: 'pending',
           fee: 0,
           type: 'bed_booking',
@@ -220,20 +293,27 @@ export default function PatientHospitalsPage() {
         updateData.ccu_beds = (bookingHospital.ccu_beds || 0) - 1
       }
 
-      await supabase
+      const { error: updateError } = await supabase
         .from('hospitals')
         .update(updateData)
         .eq('id', bookingHospital.id)
 
-      toast.success(`${bookingBedType.toUpperCase()} bed booked successfully!`)
+      if (updateError) throw updateError
+
+      toast.success(`${bookingBedType.toUpperCase()} বেড সফলভাবে বুক করা হয়েছে!`)
       setShowBookingModal(false)
       setBookingHospital(null)
+      setBookingPatientName('')
+      setBookingPatientPhone('')
+      setBookingReason('')
       
       // Refresh hospitals list
       window.location.reload()
-    } catch (error) {
-      console.error(error)
-      toast.error('Failed to book bed')
+    } catch (err) {
+      console.error('Booking error:', err)
+      toast.error('বেড বুক করতে সমস্যা হচ্ছে')
+    } finally {
+      setIsBooking(false)
     }
   }
 
@@ -245,16 +325,30 @@ export default function PatientHospitalsPage() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="flex flex-col justify-center items-center h-64 gap-4">
+        <p className="text-red-500 text-lg">{error}</p>
+        <button 
+          onClick={() => window.location.reload()}
+          className="bg-primary text-white px-6 py-2 rounded-lg hover:bg-primary-dark"
+        >
+          আবার চেষ্টা করুন
+        </button>
+      </div>
+    )
+  }
+
   return (
     <div className="p-4 sm:p-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl sm:text-3xl font-bold text-teal-dark mb-2">Find Hospitals</h1>
-      <p className="text-text-grey mb-6">Search and book beds in hospitals near you</p>
+      <h1 className="text-2xl sm:text-3xl font-bold text-teal-dark mb-2">হাসপাতাল খুঁজুন</h1>
+      <p className="text-text-grey mb-6">আপনার নিকটবর্তী হাসপাতালে বেড বুক করুন</p>
 
       <div className="bg-white rounded-2xl border border-border p-4 sm:p-6 mb-6 shadow-sm">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <input
             type="text"
-            placeholder="Search by hospital name or district..."
+            placeholder="হাসপাতালের নাম বা জেলা দিয়ে খুঁজুন..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
@@ -264,7 +358,7 @@ export default function PatientHospitalsPage() {
             onChange={(e) => setSelectedDistrict(e.target.value)}
             className="px-4 py-2 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary"
           >
-            <option value="">All Districts</option>
+            <option value="">সব জেলা</option>
             {districts.map((d) => (
               <option key={d} value={d}>{d}</option>
             ))}
@@ -279,7 +373,7 @@ export default function PatientHospitalsPage() {
               onChange={(e) => setFilters({ ...filters, has_icu: e.target.checked })}
               className="rounded"
             />
-            ICU Available
+            আইসিইউ উপলব্ধ
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -288,7 +382,7 @@ export default function PatientHospitalsPage() {
               onChange={(e) => setFilters({ ...filters, has_ccu: e.target.checked })}
               className="rounded"
             />
-            CCU Available
+            সিসিইউ উপলব্ধ
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -297,7 +391,7 @@ export default function PatientHospitalsPage() {
               onChange={(e) => setFilters({ ...filters, has_oxygen: e.target.checked })}
               className="rounded"
             />
-            Oxygen
+            অক্সিজেন
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -306,7 +400,7 @@ export default function PatientHospitalsPage() {
               onChange={(e) => setFilters({ ...filters, has_ambulance: e.target.checked })}
               className="rounded"
             />
-            Ambulance
+            অ্যাম্বুলেন্স
           </label>
           <label className="flex items-center gap-2 text-sm">
             <input
@@ -315,25 +409,33 @@ export default function PatientHospitalsPage() {
               onChange={(e) => setFilters({ ...filters, emergency_available: e.target.checked })}
               className="rounded"
             />
-            24/7 Emergency
+            ২৪/৭ জরুরি সেবা
           </label>
         </div>
+      </div>
+
+      <div className="mb-4">
+        <p className="text-text-grey">
+          <span className="font-semibold text-primary">{filteredHospitals.length}</span> টি হাসপাতাল পাওয়া গেছে
+        </p>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {filteredHospitals.map((hospital) => (
           <div key={hospital.id} className="bg-white rounded-2xl border border-border p-5 hover:shadow-lg transition">
             <h3 className="font-semibold text-lg text-teal-dark">{hospital.name}</h3>
-            <p className="text-text-grey text-sm mt-1">{hospital.district}, {hospital.upazila}</p>
+            <p className="text-text-grey text-sm mt-1">
+              {hospital.district && `${hospital.district}, `}{hospital.upazila}
+            </p>
             <p className="text-text-grey text-xs mt-1">{hospital.address}</p>
 
-            <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-1 text-green-600">✅ General Beds: {hospital.available_beds}</div>
-              <div className="flex items-center gap-1">{hospital.has_icu && '🩺 ICU'}</div>
-              <div className="flex items-center gap-1">{hospital.has_ccu && '❤️ CCU'}</div>
-              <div className="flex items-center gap-1">{hospital.has_oxygen && '💨 Oxygen'}</div>
-              <div className="flex items-center gap-1">{hospital.has_ambulance && '🚑 Ambulance'}</div>
-              <div className="flex items-center gap-1">{hospital.emergency_available && '🚨 Emergency'}</div>
+            <div className="mt-3 grid grid-cols-2 gap-1 text-sm">
+              <div className="flex items-center gap-1 text-green-600">🛏️ সাধারণ বেড: {hospital.available_beds}</div>
+              {hospital.has_icu && <div className="flex items-center gap-1">🩺 আইসিইউ: {hospital.icu_beds || 0}</div>}
+              {hospital.has_ccu && <div className="flex items-center gap-1">❤️ সিসিইউ: {hospital.ccu_beds || 0}</div>}
+              {hospital.has_oxygen && <div className="flex items-center gap-1">💨 অক্সিজেন</div>}
+              {hospital.has_ambulance && <div className="flex items-center gap-1">🚑 অ্যাম্বুলেন্স</div>}
+              {hospital.emergency_available && <div className="flex items-center gap-1">🚨 জরুরি সেবা</div>}
             </div>
 
             <div className="mt-4 flex gap-2">
@@ -341,9 +443,9 @@ export default function PatientHospitalsPage() {
                 onChange={(e) => setBedType(e.target.value as BedType)}
                 className="px-2 py-1 border border-border rounded-lg text-sm"
               >
-                <option value="general">General Bed</option>
-                <option value="icu">ICU Bed</option>
-                <option value="ccu">CCU Bed</option>
+                <option value="general">সাধারণ বেড</option>
+                <option value="icu">আইসিইউ বেড</option>
+                <option value="ccu">সিসিইউ বেড</option>
               </select>
               <button
                 onClick={() => {
@@ -353,7 +455,7 @@ export default function PatientHospitalsPage() {
                 }}
                 className="flex-1 bg-primary text-white py-2 rounded-xl hover:bg-primary-dark transition text-sm"
               >
-                Book Now
+                বুক করুন
               </button>
             </div>
           </div>
@@ -361,40 +463,56 @@ export default function PatientHospitalsPage() {
       </div>
 
       {filteredHospitals.length === 0 && (
-        <div className="text-center py-12 text-text-grey">No hospitals found. Try adjusting your search.</div>
+        <div className="text-center py-12">
+          <p className="text-text-grey">কোন হাসপাতাল পাওয়া যায়নি। আপনার সার্চ পরিবর্তন করে দেখুন।</p>
+        </div>
       )}
 
       {showBookingModal && bookingHospital && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <h2 className="text-xl font-bold text-teal-dark mb-2">Book {bookingBedType.toUpperCase()} Bed</h2>
-            <p className="text-text-grey mb-4">at {bookingHospital.name}</p>
+            <h2 className="text-xl font-bold text-teal-dark mb-2">{bookingBedType.toUpperCase()} বেড বুক করুন</h2>
+            <p className="text-text-grey mb-4">{bookingHospital.name} এ</p>
             <div className="space-y-3">
               <input
                 type="text"
-                placeholder="Patient Full Name"
+                placeholder="রোগীর পুরো নাম *"
                 value={bookingPatientName}
                 onChange={(e) => setBookingPatientName(e.target.value)}
-                className="w-full px-4 py-2 border border-border rounded-lg"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <input
                 type="tel"
-                placeholder="Patient Phone Number"
+                placeholder="রোগীর ফোন নম্বর *"
                 value={bookingPatientPhone}
                 onChange={(e) => setBookingPatientPhone(e.target.value)}
-                className="w-full px-4 py-2 border border-border rounded-lg"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
               <textarea
-                placeholder="Reason for admission (optional)"
+                placeholder="ভর্তির কারণ (ঐচ্ছিক)"
                 value={bookingReason}
                 onChange={(e) => setBookingReason(e.target.value)}
                 rows={2}
-                className="w-full px-4 py-2 border border-border rounded-lg"
+                className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               />
             </div>
             <div className="flex gap-3 mt-6">
-              <button onClick={handleBookBed} className="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-primary-dark">Confirm Booking</button>
-              <button onClick={() => setShowBookingModal(false)} className="flex-1 border border-border py-2 rounded-lg hover:bg-gray-50">Cancel</button>
+              <button 
+                onClick={handleBookBed} 
+                disabled={isBooking}
+                className="flex-1 bg-primary text-white py-2 rounded-lg hover:bg-primary-dark disabled:opacity-50"
+              >
+                {isBooking ? 'বুক করা হচ্ছে...' : 'বুকিং নিশ্চিত করুন'}
+              </button>
+              <button 
+                onClick={() => {
+                  setShowBookingModal(false)
+                  setBookingHospital(null)
+                }} 
+                className="flex-1 border border-border py-2 rounded-lg hover:bg-gray-50"
+              >
+                বাতিল
+              </button>
             </div>
           </div>
         </div>
