@@ -1,7 +1,8 @@
+// src/app/patient/invoice/[id]/page.tsx
 'use client'
 
 import { useState, useEffect } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase/client'
 import { generateInvoiceHTML, InvoiceData } from '@/lib/invoice/invoiceTemplate'
 import InvoiceDownload from '@/components/invoice/InvoiceDownload'
@@ -10,14 +11,19 @@ import toast from 'react-hot-toast'
 
 export default function InvoicePage() {
   const params = useParams()
+  const router = useRouter()
   const invoiceId = params?.id as string
   const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const fetchInvoice = async () => {
+      if (!invoiceId) {
+        router.push('/patient/dashboard')
+        return
+      }
+
       try {
-        // Fetch appointment with all details
         const { data: appointment, error } = await supabase
           .from('appointments')
           .select(`
@@ -39,10 +45,19 @@ export default function InvoicePage() {
 
         if (!appointment) {
           toast.error('Invoice not found')
+          router.push('/patient/dashboard')
           return
         }
 
-        // Format invoice data
+        let paymentStatus: 'paid' | 'pending' | 'failed' = 'pending'
+        if (appointment.status === 'confirmed' || appointment.status === 'completed') {
+          paymentStatus = 'paid'
+        } else if (appointment.status === 'pending_payment') {
+          paymentStatus = 'pending'
+        } else if (appointment.status === 'cancelled') {
+          paymentStatus = 'failed'
+        }
+
         const invoice: InvoiceData = {
           invoiceNumber: `INV-${Date.now()}-${invoiceId.slice(0, 6)}`,
           appointmentId: appointment.id,
@@ -71,7 +86,7 @@ export default function InvoicePage() {
             hour: '2-digit',
             minute: '2-digit'
           }),
-          paymentStatus: appointment.status === 'pending_payment' ? 'pending' : 'paid',
+          paymentStatus: paymentStatus,
           transactionId: `TXN-${Date.now()}-${invoiceId.slice(0, 6)}`
         }
 
@@ -84,10 +99,8 @@ export default function InvoicePage() {
       }
     }
 
-    if (invoiceId) {
-      fetchInvoice()
-    }
-  }, [invoiceId])
+    fetchInvoice()
+  }, [invoiceId, router])
 
   if (loading) {
     return (
@@ -101,11 +114,16 @@ export default function InvoicePage() {
     return (
       <div className="text-center py-12">
         <p className="text-text-grey">Invoice not found</p>
+        <button
+          onClick={() => router.push('/patient/dashboard')}
+          className="mt-4 text-primary hover:underline"
+        >
+          Go to Dashboard
+        </button>
       </div>
     )
   }
 
-  // QR code data - contains booking details
   const qrData = JSON.stringify({
     invoice: invoiceData.invoiceNumber,
     appointment: invoiceData.appointmentId,
@@ -119,7 +137,6 @@ export default function InvoicePage() {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        {/* Action Buttons */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold text-text-dark">Invoice</h1>
           <InvoiceDownload 
@@ -129,7 +146,6 @@ export default function InvoicePage() {
           />
         </div>
 
-        {/* Invoice Display */}
         <div className="bg-white rounded-2xl shadow-lg overflow-hidden">
           <div 
             id="invoice"
@@ -140,26 +156,20 @@ export default function InvoicePage() {
           />
         </div>
 
-        {/* QR Code Display (additional) */}
         <div className="mt-6 p-6 bg-white rounded-2xl shadow-lg">
-          <h3 className="text-lg font-semibold mb-4">Booking QR Code</h3>
+          <h3 className="text-lg font-semibold mb-4 text-center">Booking QR Code</h3>
           <div className="flex flex-col items-center">
-            <QRCodeGenerator data={qrData} size={200} />
+            <QRCodeGenerator data={qrData} size={150} />
             <p className="text-sm text-text-grey mt-4">
               Scan this QR code to view booking details
             </p>
           </div>
         </div>
 
-        {/* Print Styles */}
         <style jsx global>{`
           @media print {
-            body * {
-              visibility: hidden;
-            }
-            #invoice, #invoice * {
-              visibility: visible;
-            }
+            body * { visibility: hidden; }
+            #invoice, #invoice * { visibility: visible; }
             #invoice {
               position: absolute;
               left: 0;
@@ -167,9 +177,7 @@ export default function InvoicePage() {
               width: 100%;
               padding: 20px;
             }
-            .no-print {
-              display: none !important;
-            }
+            .no-print { display: none !important; }
           }
         `}</style>
       </div>

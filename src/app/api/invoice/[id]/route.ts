@@ -1,4 +1,4 @@
-// /app/api/invoice/[id]/route.ts
+// src/app/api/invoice/[id]/route.ts
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { generateInvoiceHTML, InvoiceData } from '@/lib/invoice/invoiceTemplate'
@@ -8,11 +8,9 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // ✅ createClient() এখন async, তাই await ব্যবহার করুন
     const supabase = await createClient()
     const { id } = params
 
-    // অ্যাপয়েন্টমেন্ট ডেটা ফেচ করুন
     const { data: appointment, error } = await supabase
       .from('appointments')
       .select(`
@@ -37,7 +35,6 @@ export async function GET(
       )
     }
 
-    // paymentStatus সঠিক টাইপে কনভার্ট করুন
     let paymentStatus: 'paid' | 'pending' | 'failed' = 'pending'
     
     if (appointment.status === 'confirmed' || appointment.status === 'completed') {
@@ -48,7 +45,6 @@ export async function GET(
       paymentStatus = 'failed'
     }
 
-    // invoiceData টাইপ সঠিকভাবে সেট করুন
     const invoiceData: InvoiceData = {
       invoiceNumber: `INV-${Date.now()}-${id.slice(0, 6)}`,
       appointmentId: appointment.id,
@@ -81,7 +77,6 @@ export async function GET(
       transactionId: `TXN-${Date.now()}-${id.slice(0, 6)}`
     }
 
-    // HTML জেনারেট করুন
     const html = generateInvoiceHTML(invoiceData)
 
     return new NextResponse(html, {

@@ -1,25 +1,7 @@
-// ============================================
-// POS Printer Service - WebUSB ব্যবহার করে
-// ============================================
-
-/**
- * ইনভয়েস প্রিন্ট করার জন্য ডেটা টাইপ
- */
-export interface InvoicePrintData {
-  invoiceNumber: string
-  patientName: string
-  doctorName: string
-  appointmentDate: string
-  appointmentTime: string
-  totalAmount: number
-  consultationFee: number
-  platformFee: number
-  paymentMethod: string
-  paymentDate: string
-}
+// src/lib/print/printService.ts
 
 // ============================================
-// USB টাইপ ডিক্লেয়ারেশন (TypeScript এর জন্য)
+// WebUSB টাইপ ডিক্লেয়ারেশন
 // ============================================
 
 declare global {
@@ -148,6 +130,34 @@ declare global {
 }
 
 // ============================================
+// টাইপ ডিফাইনেশন
+// ============================================
+
+export interface InvoicePrintData {
+  invoiceNumber: string
+  patientName: string
+  doctorName: string
+  appointmentDate: string
+  appointmentTime: string
+  totalAmount: number
+  consultationFee: number
+  platformFee: number
+  paymentMethod: string
+  paymentDate: string
+}
+
+export interface PrinterStatus {
+  connected: boolean
+  deviceInfo?: string
+}
+
+export interface PrintOptions {
+  copies?: number
+  paperSize?: '80mm' | '58mm'
+  characterSet?: 'pc437' | 'pc850' | 'pc858'
+}
+
+// ============================================
 // POS প্রিন্টার সার্ভিস ক্লাস
 // ============================================
 
@@ -172,7 +182,7 @@ export class POSPrinterService {
         return false
       }
 
-      const usb = navigator.usb
+      const usb = (navigator as Navigator).usb
       
       const device = await usb.requestDevice({
         filters: [
@@ -231,7 +241,7 @@ export class POSPrinterService {
   /**
    * ইনভয়েস প্রিন্ট করুন
    */
-  async printInvoice(invoiceData: InvoicePrintData): Promise<boolean> {
+  async printInvoice(data: InvoicePrintData): Promise<boolean> {
     if (!this.isPrinterConnected()) {
       console.log('🔄 Printer not connected, trying to connect...')
       const connected = await this.connect()
@@ -245,7 +255,7 @@ export class POSPrinterService {
     }
 
     try {
-      const commands = this.buildEscPosCommands(invoiceData)
+      const commands = this.buildEscPosCommands(data)
 
       for (let i = 0; i < commands.length; i++) {
         await this.sendCommand(commands[i])
@@ -311,7 +321,6 @@ export class POSPrinterService {
 
   /**
    * প্রিন্টারে কমান্ড পাঠান
-   * BufferSource টাইপের সাথে সামঞ্জস্যপূর্ণ করতে Uint8Array কে ArrayBuffer এ কনভার্ট করা হয়েছে
    */
   private async sendCommand(data: Uint8Array): Promise<void> {
     if (!this.device) {
@@ -319,10 +328,7 @@ export class POSPrinterService {
     }
 
     try {
-      // 🔥 গুরুত্বপূর্ণ ফিক্স: Uint8Array কে ArrayBuffer এ কনভার্ট করুন
-      // BufferSource টাইপের সাথে মিলানোর জন্য
       const buffer = data.buffer as ArrayBuffer
-      
       const result = await this.device.transferOut(1, buffer)
       
       if (result.status !== 'ok') {
@@ -372,11 +378,7 @@ export class POSPrinterService {
   }
 
   private setAlignment(align: 'left' | 'center' | 'right'): Uint8Array {
-    const alignMap = {
-      left: 0x00,
-      center: 0x01,
-      right: 0x02
-    }
+    const alignMap = { left: 0x00, center: 0x01, right: 0x02 }
     return new Uint8Array([0x1B, 0x61, alignMap[align]])
   }
 
@@ -420,15 +422,11 @@ export function isWebUSBSupported(): boolean {
 /**
  * প্রিন্টার স্ট্যাটাস চেক করুন
  */
-export async function checkPrinterStatus(): Promise<{
-  supported: boolean
-  connected: boolean
-  deviceInfo?: string
-}> {
+export async function checkPrinterStatus(): Promise<PrinterStatus> {
   const supported = isWebUSBSupported()
   
   if (!supported) {
-    return { supported: false, connected: false }
+    return { connected: false }
   }
 
   try {
@@ -445,9 +443,9 @@ export async function checkPrinterStatus(): Promise<{
       await printer.disconnect()
     }
     
-    return { supported: true, connected, deviceInfo }
+    return { connected, deviceInfo }
   } catch {
-    return { supported: true, connected: false }
+    return { connected: false }
   }
 }
 

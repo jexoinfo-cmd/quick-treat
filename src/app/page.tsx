@@ -6,7 +6,6 @@ import Image from 'next/image'
 export default function LandingPage() {
   const router = useRouter()
 
-  // Navigation functions
   const goToLogin = () => {
     router.push('/login')
   }
@@ -64,7 +63,6 @@ export default function LandingPage() {
       {/* Hero Section */}
       <main className="flex-1 px-4 sm:px-6 lg:px-8 py-12 sm:py-16 md:py-20">
         <div className="max-w-7xl mx-auto">
-          {/* Hero Text */}
           <div className="text-center mb-12 sm:mb-16">
             <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-teal-dark mb-4">
               Skip Waiting Rooms.
@@ -167,9 +165,7 @@ export default function LandingPage() {
       <footer className="bg-teal-dark text-white">
         <div className="px-4 sm:px-6 lg:px-8 py-12">
           <div className="max-w-7xl mx-auto">
-            {/* Footer Top */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8 mb-8">
-              {/* Brand */}
               <div>
                 <div className="flex items-center gap-2 mb-4">
                   <div className="relative w-8 h-8">
@@ -188,7 +184,6 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              {/* Quick Links */}
               <div>
                 <h4 className="font-semibold mb-4">Quick Links</h4>
                 <ul className="space-y-2 text-white/70 text-sm">
@@ -199,7 +194,6 @@ export default function LandingPage() {
                 </ul>
               </div>
 
-              {/* For Doctors */}
               <div>
                 <h4 className="font-semibold mb-4">For Doctors</h4>
                 <ul className="space-y-2 text-white/70 text-sm">
@@ -210,7 +204,6 @@ export default function LandingPage() {
                 </ul>
               </div>
 
-              {/* Contact */}
               <div>
                 <h4 className="font-semibold mb-4">Contact Us</h4>
                 <ul className="space-y-2 text-white/70 text-sm">
@@ -222,7 +215,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Footer Bottom */}
             <div className="border-t border-white/20 pt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
               <p className="text-white/60 text-sm">
                 © 2026 Quick Treat. All Rights Reserved.

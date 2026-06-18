@@ -1,8 +1,11 @@
+// src/app/layout.tsx
 import type { Metadata, Viewport } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Providers } from '@/components/Providers'
 import { Toaster } from 'react-hot-toast'
+
+// ✅ সঠিক পাথ - '/' স্ল্যাশ ব্যবহার করুন
+import Providers from '@/components/providers/Providers'
 
 const inter = Inter({ subsets: ['latin'] })
 

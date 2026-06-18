@@ -1,3 +1,4 @@
+// src/lib/invoice/invoiceTemplate.ts
 export interface InvoiceData {
   invoiceNumber: string
   appointmentId: string
@@ -19,7 +20,13 @@ export interface InvoiceData {
   transactionId: string
 }
 
-export function generateInvoiceHTML(data: InvoiceData): string {
+export function generateInvoiceHTML(data: InvoiceData, role: 'doctor' | 'hospital' | 'patient' = 'patient'): string {
+  const statusClass = data.paymentStatus === 'paid' ? 'status-paid' : 
+                      data.paymentStatus === 'pending' ? 'status-pending' : 'status-failed'
+  
+  const headerText = role === 'doctor' ? 'Doctor Invoice' : 
+                     role === 'hospital' ? 'Hospital Invoice' : 'Invoice'
+  
   return `
     <!DOCTYPE html>
     <html>
@@ -27,14 +34,10 @@ export function generateInvoiceHTML(data: InvoiceData): string {
       <meta charset="UTF-8">
       <title>Invoice #${data.invoiceNumber}</title>
       <style>
-        * {
-          margin: 0;
-          padding: 0;
-          box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
           font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          background: #fff;
+          background: #f0fdfa;
           padding: 40px;
         }
         .invoice-container {
@@ -45,7 +48,7 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           box-shadow: 0 4px 24px rgba(0,0,0,0.1);
           padding: 48px;
         }
-        .invoice-header {
+        .header {
           display: flex;
           justify-content: space-between;
           align-items: start;
@@ -53,26 +56,28 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           padding-bottom: 24px;
           margin-bottom: 32px;
         }
-        .logo-section h1 {
+        .logo h1 {
           font-size: 28px;
           font-weight: 700;
           color: #0F766E;
-          margin: 0;
         }
-        .logo-section p {
+        .logo p {
           color: #5E6C6A;
           font-size: 14px;
-          margin-top: 4px;
         }
-        .invoice-title {
+        .title {
           text-align: right;
         }
-        .invoice-title h2 {
+        .title h2 {
           font-size: 24px;
           color: #0F766E;
-          margin: 0;
         }
-        .invoice-title .status {
+        .title .subtitle {
+          font-size: 14px;
+          color: #5E6C6A;
+          font-weight: 400;
+        }
+        .status {
           display: inline-block;
           padding: 4px 16px;
           border-radius: 20px;
@@ -80,19 +85,10 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           font-weight: 600;
           margin-top: 8px;
         }
-        .status-paid {
-          background: #D1FAE5;
-          color: #065F46;
-        }
-        .status-pending {
-          background: #FEF3C7;
-          color: #92400E;
-        }
-        .status-failed {
-          background: #FEE2E2;
-          color: #991B1B;
-        }
-        .invoice-grid {
+        .status-paid { background: #D1FAE5; color: #065F46; }
+        .status-pending { background: #FEF3C7; color: #92400E; }
+        .status-failed { background: #FEE2E2; color: #991B1B; }
+        .grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
           gap: 24px;
@@ -116,13 +112,14 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           font-weight: 500;
           color: #111827;
         }
-        .table-container {
-          margin: 24px 0;
-          overflow-x: auto;
+        .info-box .value-small {
+          font-size: 14px;
+          color: #6B7280;
         }
         table {
           width: 100%;
           border-collapse: collapse;
+          margin: 24px 0;
         }
         th {
           background: #F9FAFB;
@@ -149,13 +146,8 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           gap: 32px;
           padding: 8px 0;
         }
-        .total-row .label {
-          color: #6B7280;
-        }
-        .total-row .amount {
-          font-weight: 500;
-          color: #111827;
-        }
+        .total-row .label { color: #6B7280; }
+        .total-row .amount { font-weight: 500; color: #111827; }
         .grand-total {
           font-size: 20px;
           font-weight: 700;
@@ -163,29 +155,6 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           padding-top: 8px;
           border-top: 2px solid #0D9488;
           margin-top: 8px;
-        }
-        .qr-section {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-top: 32px;
-          padding: 24px;
-          background: #F9FAFB;
-          border-radius: 12px;
-        }
-        .qr-code {
-          text-align: center;
-        }
-        .qr-code img {
-          width: 120px;
-          height: 120px;
-        }
-        .barcode {
-          text-align: center;
-        }
-        .barcode img {
-          width: 200px;
-          height: 60px;
         }
         .footer {
           margin-top: 32px;
@@ -195,90 +164,99 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           color: #6B7280;
           font-size: 12px;
         }
-        @media print {
-          body { padding: 0; }
-          .invoice-container { box-shadow: none; padding: 24px; }
-          .no-print { display: none !important; }
+        .footer a {
+          color: #0D9488;
+          text-decoration: none;
+        }
+        .watermark {
+          position: relative;
+        }
+        .watermark::after {
+          content: '${role === 'doctor' ? 'DOCTOR COPY' : role === 'hospital' ? 'HOSPITAL COPY' : 'PATIENT COPY'}';
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%) rotate(-45deg);
+          font-size: 60px;
+          font-weight: 900;
+          color: rgba(13, 148, 136, 0.05);
+          pointer-events: none;
+          letter-spacing: 8px;
         }
         @media (max-width: 600px) {
-          .invoice-grid { grid-template-columns: 1fr; }
-          .invoice-header { flex-direction: column; }
-          .invoice-title { text-align: left; margin-top: 16px; }
-          .qr-section { flex-direction: column; gap: 16px; }
+          .grid { grid-template-columns: 1fr; }
+          .header { flex-direction: column; }
+          .title { text-align: left; margin-top: 16px; }
+          .invoice-container { padding: 24px; }
+          body { padding: 16px; }
+        }
+        @media print {
+          body { background: white; padding: 0; }
+          .invoice-container { box-shadow: none; padding: 24px; }
         }
       </style>
     </head>
     <body>
-      <div class="invoice-container" id="invoice">
-        <!-- Header -->
-        <div class="invoice-header">
-          <div class="logo-section">
+      <div class="invoice-container watermark" id="invoice">
+        <div class="header">
+          <div class="logo">
             <h1>🏥 Quick Treat</h1>
             <p>Smart Healthcare Platform</p>
-            <p style="font-size:12px;color:#6B7280;margin-top:4px;">
-              ${data.hospitalName || 'Quick Treat Healthcare'}
-            </p>
+            ${data.hospitalName ? `<p style="font-size:12px;color:#6B7280;margin-top:4px;">${data.hospitalName}</p>` : ''}
           </div>
-          <div class="invoice-title">
-            <h2>INVOICE</h2>
-            <div class="status status-${data.paymentStatus}">
+          <div class="title">
+            <h2>${headerText}</h2>
+            <div class="subtitle">#${data.invoiceNumber}</div>
+            <div class="status ${statusClass}">
               ${data.paymentStatus.toUpperCase()}
             </div>
-            <p style="font-size:12px;color:#6B7280;margin-top:4px;">
-              #${data.invoiceNumber}
-            </p>
           </div>
         </div>
 
-        <!-- Info Grid -->
-        <div class="invoice-grid">
+        <div class="grid">
           <div class="info-box">
             <label>Patient Information</label>
             <div class="value">${data.patientName}</div>
-            <div style="font-size:14px;color:#6B7280;">${data.patientPhone}</div>
-            <div style="font-size:14px;color:#6B7280;">${data.patientEmail}</div>
+            <div class="value-small">${data.patientPhone}</div>
+            <div class="value-small">${data.patientEmail}</div>
           </div>
           <div class="info-box">
             <label>Doctor Information</label>
             <div class="value">Dr. ${data.doctorName}</div>
-            <div style="font-size:14px;color:#6B7280;">${data.doctorSpeciality}</div>
+            <div class="value-small">${data.doctorSpeciality}</div>
           </div>
           <div class="info-box">
             <label>Appointment Details</label>
             <div class="value">${data.appointmentDate}</div>
-            <div style="font-size:14px;color:#6B7280;">${data.appointmentTime}</div>
+            <div class="value-small">${data.appointmentTime}</div>
           </div>
           <div class="info-box">
             <label>Payment Details</label>
             <div class="value">Transaction ID: ${data.transactionId}</div>
-            <div style="font-size:14px;color:#6B7280;">${data.paymentDate}</div>
-            <div style="font-size:14px;color:#6B7280;">Method: ${data.paymentMethod}</div>
+            <div class="value-small">${data.paymentDate}</div>
+            <div class="value-small">Method: ${data.paymentMethod}</div>
           </div>
         </div>
 
-        <!-- Table -->
-        <div class="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>Description</th>
-                <th>Amount</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>Consultation Fee - Dr. ${data.doctorName}</td>
-                <td>৳${data.consultationFee.toFixed(2)}</td>
-              </tr>
-              <tr>
-                <td>Platform Service Fee (${((data.platformFee / data.consultationFee) * 100).toFixed(0)}%)</td>
-                <td>৳${data.platformFee.toFixed(2)}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Consultation Fee - Dr. ${data.doctorName}</td>
+              <td>৳${data.consultationFee.toFixed(2)}</td>
+            </tr>
+            <tr>
+              <td>Platform Service Fee (${((data.platformFee / data.consultationFee) * 100).toFixed(0)}%)</td>
+              <td>৳${data.platformFee.toFixed(2)}</td>
+            </tr>
+          </tbody>
+        </table>
 
-        <!-- Total -->
         <div class="total-section">
           <div class="total-row">
             <span class="label">Subtotal</span>
@@ -293,19 +271,6 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           </div>
         </div>
 
-        <!-- QR & Barcode -->
-        <div class="qr-section">
-          <div class="qr-code">
-            <div id="qr-container"></div>
-            <p style="font-size:12px;color:#6B7280;margin-top:8px;">Scan to view booking</p>
-          </div>
-          <div class="barcode">
-            <div id="barcode-container"></div>
-            <p style="font-size:12px;color:#6B7280;margin-top:8px;">Invoice #${data.invoiceNumber}</p>
-          </div>
-        </div>
-
-        <!-- Footer -->
         <div class="footer">
           <p>Thank you for choosing Quick Treat!</p>
           <p style="margin-top:4px;">
@@ -313,6 +278,7 @@ export function generateInvoiceHTML(data: InvoiceData): string {
           </p>
           <p style="margin-top:8px;font-size:10px;">
             This is a system generated invoice. No signature required.
+            ${role === 'doctor' ? ' | Doctor Copy' : role === 'hospital' ? ' | Hospital Copy' : ' | Patient Copy'}
           </p>
         </div>
       </div>

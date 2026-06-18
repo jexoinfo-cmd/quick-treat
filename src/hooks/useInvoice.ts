@@ -1,9 +1,12 @@
+// src/hooks/useInvoice.ts
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase/client'
 import toast from 'react-hot-toast'
+import { InvoiceData } from '@/lib/invoice/invoiceTemplate'
 
 export function useInvoice() {
   const [loading, setLoading] = useState(false)
+  const [invoiceData, setInvoiceData] = useState<InvoiceData | null>(null)
 
   const generateInvoice = async (appointmentId: string) => {
     setLoading(true)
@@ -23,25 +26,36 @@ export function useInvoice() {
 
       if (error) throw error
 
-      // Generate invoice number
-      const invoiceNumber = `INV-${Date.now()}-${appointmentId.slice(0, 6)}`
+      let paymentStatus: 'paid' | 'pending' | 'failed' = 'pending'
+      if (data.status === 'confirmed' || data.status === 'completed') {
+        paymentStatus = 'paid'
+      } else if (data.status === 'pending_payment') {
+        paymentStatus = 'pending'
+      } else if (data.status === 'cancelled') {
+        paymentStatus = 'failed'
+      }
 
-      // Save invoice to database
-      const { error: saveError } = await supabase
-        .from('invoices')
-        .insert({
-          appointment_id: appointmentId,
-          invoice_number: invoiceNumber,
-          patient_id: data.patient_id,
-          doctor_id: data.doctor_id,
-          amount: data.fee,
-          status: 'paid',
-          generated_at: new Date().toISOString()
-        })
+      const invoice: InvoiceData = {
+        invoiceNumber: `INV-${Date.now()}-${appointmentId.slice(0, 6)}`,
+        appointmentId: data.id,
+        patientName: data.patient?.name || 'Unknown',
+        patientPhone: data.patient?.phone || 'N/A',
+        patientEmail: data.patient?.email || 'N/A',
+        doctorName: data.doctor?.profile?.name || 'Unknown',
+        doctorSpeciality: data.doctor?.speciality || 'General',
+        appointmentDate: new Date(data.appointment_date).toLocaleDateString(),
+        appointmentTime: data.appointment_time,
+        consultationFee: data.fee || 0,
+        platformFee: (data.fee || 0) * 0.1,
+        totalAmount: data.fee || 0,
+        paymentMethod: 'Online Payment',
+        paymentDate: new Date().toLocaleDateString(),
+        paymentStatus: paymentStatus,
+        transactionId: `TXN-${Date.now()}-${appointmentId.slice(0, 6)}`
+      }
 
-      if (saveError) throw saveError
-
-      return { invoiceNumber, data }
+      setInvoiceData(invoice)
+      return invoice
     } catch (error) {
       console.error('Error generating invoice:', error)
       toast.error('Failed to generate invoice')
@@ -74,5 +88,5 @@ export function useInvoice() {
     }
   }
 
-  return { generateInvoice, downloadInvoice, loading }
+  return { generateInvoice, downloadInvoice, invoiceData, loading }
 }

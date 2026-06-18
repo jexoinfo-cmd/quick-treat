@@ -1,3 +1,4 @@
+/* src/app/globals.css */
 @import 'tailwindcss';
 
 @theme {
@@ -18,7 +19,6 @@
   --color-teal-light: #CCFBF1;
 }
 
-/* Base Styles */
 * {
   box-sizing: border-box;
 }
@@ -31,7 +31,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -51,65 +50,23 @@ body {
   background: #a8a8a8;
 }
 
-/* Responsive Container */
-.container-fluid {
-  width: 100%;
-  padding-right: 1rem;
-  padding-left: 1rem;
-  margin-right: auto;
-  margin-left: auto;
-}
-
-@media (min-width: 640px) {
-  .container-fluid {
-    padding-right: 1.5rem;
-    padding-left: 1.5rem;
-  }
-}
-
-@media (min-width: 1024px) {
-  .container-fluid {
-    padding-right: 2rem;
-    padding-left: 2rem;
-  }
-}
-
-/* Responsive Text */
 @media (max-width: 640px) {
-  h1, .h1 {
-    font-size: 1.5rem !important;
-  }
-  h2, .h2 {
-    font-size: 1.25rem !important;
-  }
-  h3, .h3 {
-    font-size: 1.125rem !important;
-  }
-  h4, .h4 {
-    font-size: 1rem !important;
-  }
+  h1, .h1 { font-size: 1.5rem !important; }
+  h2, .h2 { font-size: 1.25rem !important; }
+  h3, .h3 { font-size: 1.125rem !important; }
+  h4, .h4 { font-size: 1rem !important; }
 }
 
-/* Touch-friendly elements */
 @media (max-width: 768px) {
-  button, 
-  .btn,
-  [role="button"],
-  a.button,
-  select,
-  input[type="submit"] {
+  button, .btn, [role="button"], a.button, select, input[type="submit"] {
     min-height: 44px;
     min-width: 44px;
   }
-  
-  input, 
-  select, 
-  textarea {
+  input, select, textarea {
     font-size: 16px !important;
   }
 }
 
-/* Card Styles */
 .card {
   background-color: white;
   border-radius: 1rem;
@@ -121,7 +78,6 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
-/* Button Styles */
 .btn-primary {
   background-color: var(--color-primary);
   color: white;
@@ -148,7 +104,6 @@ body {
   background-color: var(--color-primary-light);
 }
 
-/* Input Styles */
 .input {
   width: 100%;
   padding: 0.5rem 1rem;
@@ -164,7 +119,6 @@ body {
   border-color: transparent;
 }
 
-/* Loading Spinner */
 .spinner {
   width: 40px;
   height: 40px;
@@ -175,12 +129,9 @@ body {
 }
 
 @keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
+  to { transform: rotate(360deg); }
 }
 
-/* Animations */
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
 }
@@ -194,33 +145,20 @@ body {
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 @keyframes fadeIn {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes scaleUp {
-  from {
-    transform: scale(0.95);
-  }
-  to {
-    transform: scale(1);
-  }
+  from { transform: scale(0.95); }
+  to { transform: scale(1); }
 }
 
-/* Utility Classes */
 .text-balance {
   text-wrap: balance;
 }
@@ -235,7 +173,6 @@ body {
   transition-duration: 150ms;
 }
 
-/* Responsive Grid */
 .responsive-grid {
   display: grid;
   gap: 1rem;
@@ -262,7 +199,6 @@ body {
   }
 }
 
-/* Hide scrollbar for clean UI */
 .no-scrollbar::-webkit-scrollbar {
   display: none;
 }
@@ -270,4 +206,4 @@ body {
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
-} 
+}
