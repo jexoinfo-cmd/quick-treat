@@ -19,26 +19,34 @@
   --color-teal-light: #CCFBF1;
 }
 
+/* ✅ Base styles - minimized */
 * {
   box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background-color: var(--color-background);
   color: var(--color-text-dark);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: var(--font-inter, system-ui, -apple-system, sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  min-height: 100vh;
 }
 
+/* ✅ Scrollbar - minimized */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -50,15 +58,20 @@ body {
   background: #a8a8a8;
 }
 
+/* ✅ Responsive text - optimized */
 @media (max-width: 640px) {
-  h1, .h1 { font-size: 1.5rem !important; }
-  h2, .h2 { font-size: 1.25rem !important; }
-  h3, .h3 { font-size: 1.125rem !important; }
-  h4, .h4 { font-size: 1rem !important; }
+  h1 { font-size: 1.5rem !important; }
+  h2 { font-size: 1.25rem !important; }
+  h3 { font-size: 1.125rem !important; }
 }
 
+/* ✅ Touch-friendly - optimized */
 @media (max-width: 768px) {
-  button, .btn, [role="button"], a.button, select, input[type="submit"] {
+  button, 
+  .btn, 
+  [role="button"], 
+  select, 
+  input[type="submit"] {
     min-height: 44px;
     min-width: 44px;
   }
@@ -67,28 +80,29 @@ body {
   }
 }
 
+/* ✅ Utility classes - combined */
 .card {
-  background-color: white;
+  background: white;
   border-radius: 1rem;
   border: 1px solid var(--color-border);
   transition: box-shadow 0.2s ease;
 }
 
 .card:hover {
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
 .btn-primary {
-  background-color: var(--color-primary);
+  background: var(--color-primary);
   color: white;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
   font-weight: 500;
-  transition: all 0.2s ease;
+  transition: background 0.2s ease;
 }
 
 .btn-primary:hover {
-  background-color: var(--color-primary-dark);
+  background: var(--color-primary-dark);
 }
 
 .btn-outline {
@@ -101,7 +115,7 @@ body {
 }
 
 .btn-outline:hover {
-  background-color: var(--color-primary-light);
+  background: var(--color-primary-light);
 }
 
 .input {
@@ -119,6 +133,7 @@ body {
   border-color: transparent;
 }
 
+/* ✅ Spinner - optimized */
 .spinner {
   width: 40px;
   height: 40px;
@@ -132,6 +147,7 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* ✅ Animations - combined */
 .animate-slide-up {
   animation: slideUp 0.3s ease-out;
 }
@@ -159,20 +175,7 @@ body {
   to { transform: scale(1); }
 }
 
-.text-balance {
-  text-wrap: balance;
-}
-
-.cursor-pointer {
-  cursor: pointer;
-}
-
-.transition-all {
-  transition-property: all;
-  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-  transition-duration: 150ms;
-}
-
+/* ✅ Responsive grid - optimized */
 .responsive-grid {
   display: grid;
   gap: 1rem;
@@ -197,6 +200,11 @@ body {
   .responsive-grid {
     grid-template-columns: repeat(4, 1fr);
   }
+}
+
+/* ✅ Utility */
+.text-balance {
+  text-wrap: balance;
 }
 
 .no-scrollbar::-webkit-scrollbar {
