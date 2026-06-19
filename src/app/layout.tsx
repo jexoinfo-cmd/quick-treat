@@ -5,11 +5,11 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { Suspense } from 'react'
 import Providers from '@/components/providers/Providers'
+import Image from 'next/image'
 
-// ✅ ফন্ট অপটিমাইজেশন
 const inter = Inter({ 
   subsets: ['latin'],
-  display: 'swap',  // ← fallback font দেখান
+  display: 'swap',
   preload: true,
   weight: ['400', '500', '600', '700'],
   variable: '--font-inter',
@@ -26,6 +26,10 @@ export const metadata: Metadata = {
     siteName: 'Quick Treat',
     locale: 'en_US',
     type: 'website',
+  },
+  icons: {
+    icon: '/assets/icons/logo.png',
+    apple: '/assets/icons/logo.png',
   },
 }
 
@@ -44,15 +48,15 @@ export default function RootLayout({
   return (
     <html lang="en" className={inter.variable}>
       <head>
-        {/* ✅ Preconnect for Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link 
           rel="preconnect" 
           href="https://fonts.gstatic.com" 
           crossOrigin="anonymous" 
         />
-        {/* ✅ DNS Prefetch */}
-        <link rel="dns-prefetch" href="https://your-supabase-project.supabase.co" />
+        <link rel="dns-prefetch" href="https://cqajbjwgunhroaiqmhiv.supabase.co" />
+        <link rel="icon" href="/assets/icons/logo.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/assets/icons/logo.png" />
       </head>
       <body className="font-sans antialiased bg-background text-text-dark">
         <Suspense fallback={
