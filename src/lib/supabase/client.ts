@@ -1,34 +1,28 @@
-// /lib/supabase/client.ts
-import { createBrowserClient } from '@supabase/ssr'
+import { createClient } from '@supabase/supabase-js'
 
-// ✅ Environment Variables চেক করুন
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-// ✅ Runtime এ চেক করুন
 if (!supabaseUrl) {
-  throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_URL')
-}
-
-if (!supabaseAnonKey) {
-  throw new Error('Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY')
-}
-
-export function createClient() {
-  return createBrowserClient(
-    supabaseUrl,      // ✅ এখন string টাইপ
-    supabaseAnonKey,  // ✅ এখন string টাইপ
-    {
-      auth: {
-        persistSession: true,
-        autoRefreshToken: true,
-        detectSessionInUrl: true,
-      },
-    }
+  throw new Error(
+    'Missing environment variable: NEXT_PUBLIC_SUPABASE_URL'
   )
 }
 
-// পুরনো কোডের সাথে সামঞ্জস্যের জন্য
-export const supabase = createClient()
+if (!supabaseAnonKey) {
+  throw new Error(
+    'Missing environment variable: NEXT_PUBLIC_SUPABASE_ANON_KEY'
+  )
+}
 
-export default supabase
+export const supabase = createClient(
+  supabaseUrl,
+  supabaseAnonKey,
+  {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
+)

@@ -1,13 +1,11 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-// useRouter ইমপোর্ট সরিয়ে দেওয়া হলো কারণ ব্যবহার করা হচ্ছে না
-// import { useRouter } from 'next/navigation'
-import Image from 'next/image'
 import { supabase } from '@/lib/supabase/client'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 import toast from 'react-hot-toast'
 
+// Define types
 interface FormData {
   name: string
   email: string
@@ -18,9 +16,9 @@ interface FormData {
   experience: string
   consultation_fee: string
   about: string
-  profile_image: string
 }
 
+// Specialities list
 const specialities = [
   'Cardiologist (হৃদরোগ বিশেষজ্ঞ)',
   'Neurologist (স্নায়ুরোগ বিশেষজ্ঞ)',
@@ -42,25 +40,55 @@ const specialities = [
   'Hematologist (রক্ত বিশেষজ্ঞ)',
   'Radiologist (রেডিওলজিস্ট)',
   'Anesthesiologist (এনেস্থেসিওলজিস্ট)',
-  'General Physician (সাধারণ চিকিৎসক)'
+  'General Physician (সাধারণ চিকিৎসক)',
+  'Hepatologist (লিভার বিশেষজ্ঞ)',
+  'Infectious Disease Specialist (সংক্রামক রোগ বিশেষজ্ঞ)',
+  'Neonatologist (নবজাতক বিশেষজ্ঞ)',
+  'Neurosurgeon (নিউরোসার্জন)',
+  'Plastic Surgeon (প্লাস্টিক সার্জন)',
+  'Cardiothoracic Surgeon (হার্ট ও বুকের সার্জন)'
 ]
 
+// Degrees list
 const degrees = [
-  'MBBS', 'MD (Medicine)', 'MD (Pediatrics)', 'MD (Dermatology)',
-  'MD (Psychiatry)', 'MD (Cardiology)', 'MD (Neurology)',
-  'MS (General Surgery)', 'MS (Orthopedics)', 'MS (ENT)',
-  'MS (Ophthalmology)', 'MS (Obstetrics & Gynecology)',
-  'FCPS (Medicine)', 'FCPS (Surgery)', 'FCPS (Pediatrics)',
-  'FCPS (Gynecology)', 'BDS', 'MDS', 'PhD', 'FRCS', 'MRCP'
+  'MBBS',
+  'MD (Medicine)',
+  'MD (Pediatrics)',
+  'MD (Dermatology)',
+  'MD (Psychiatry)',
+  'MD (Cardiology)',
+  'MD (Neurology)',
+  'MS (General Surgery)',
+  'MS (Orthopedics)',
+  'MS (ENT)',
+  'MS (Ophthalmology)',
+  'MS (Obstetrics & Gynecology)',
+  'FCPS (Medicine)',
+  'FCPS (Surgery)',
+  'FCPS (Pediatrics)',
+  'FCPS (Gynecology)',
+  'BDS',
+  'MDS',
+  'PhD',
+  'FRCS',
+  'MRCP',
+  'Diploma in Child Health',
+  'Diploma in Dermatology',
+  'CCD (Cardiology)',
+  'MCPS',
+  'M Phil',
+  'BAMS (Ayurveda)',
+  'BHMS (Homoeopathy)',
+  'DNB (Diplomate of National Board)',
+  'MCh (Master of Chirurgiae)',
+  'DM (Doctor of Medicine)',
+  'MPH (Master of Public Health)'
 ]
 
 export default function DoctorProfile() {
   const { profile } = useAuthStore()
-  // router ভেরিয়েবলটি সরিয়ে দেওয়া হলো
-  // const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
-  const [uploadingImage, setUploadingImage] = useState(false)
   const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
@@ -70,10 +98,10 @@ export default function DoctorProfile() {
     degree: '',
     experience: '',
     consultation_fee: '',
-    about: '',
-    profile_image: ''
+    about: ''
   })
 
+  // Load profile data
   useEffect(() => {
     const loadProfile = async () => {
       if (!profile?.id) {
@@ -82,19 +110,23 @@ export default function DoctorProfile() {
       }
 
       try {
-        // Fetch profile data
-        const { data: profileData } = await supabase
+        // Fetch profile data directly from profiles table
+        const { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('*')
+          .select('name, email, phone, whatsapp')
           .eq('id', profile.id)
           .single()
 
+        if (profileError) throw profileError
+
         // Get doctor info
-        const { data: doctor } = await supabase
+        const { data: doctor, error: doctorError } = await supabase
           .from('doctors')
           .select('*')
           .eq('user_id', profile.id)
           .single()
+
+        if (doctorError) throw doctorError
 
         setFormData({
           name: profileData?.name || '',
@@ -105,12 +137,11 @@ export default function DoctorProfile() {
           degree: doctor?.degree || '',
           experience: doctor?.experience?.toString() || '',
           consultation_fee: doctor?.consultation_fee?.toString() || '',
-          about: doctor?.about_en || '',
-          profile_image: profileData?.profile_image || ''
+          about: doctor?.about_en || ''
         })
       } catch (error) {
         console.error('Error fetching profile:', error)
-        toast.error('প্রোফাইল লোড করতে সমস্যা হচ্ছে')
+        toast.error('Failed to load profile')
       } finally {
         setLoading(false)
       }
@@ -118,59 +149,6 @@ export default function DoctorProfile() {
 
     loadProfile()
   }, [profile?.id])
-
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-
-    // Check file type
-    if (!file.type.startsWith('image/')) {
-      toast.error('দয়া করে একটি ইমেজ ফাইল আপলোড করুন')
-      return
-    }
-
-    // Check file size (max 2MB)
-    if (file.size > 2 * 1024 * 1024) {
-      toast.error('ইমেজের সাইজ ২MB এর কম হতে হবে')
-      return
-    }
-
-    setUploadingImage(true)
-
-    try {
-      const fileExt = file.name.split('.').pop()
-      const fileName = `${profile?.id}.${fileExt}`
-      const filePath = `${profile?.id}/${fileName}`
-
-      // Upload image to Supabase Storage
-      const { error: uploadError } = await supabase.storage
-        .from('doctor-profiles')
-        .upload(filePath, file, { upsert: true })
-
-      if (uploadError) throw uploadError
-
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('doctor-profiles')
-        .getPublicUrl(filePath)
-
-      // Update profile with image URL
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ profile_image: publicUrl })
-        .eq('id', profile?.id)
-
-      if (updateError) throw updateError
-
-      setFormData({ ...formData, profile_image: publicUrl })
-      toast.success('প্রোফাইল পিকচার আপডেট হয়েছে!')
-    } catch (error) {
-      console.error('Error uploading image:', error)
-      toast.error('ইমেজ আপলোড করতে সমস্যা হচ্ছে')
-    } finally {
-      setUploadingImage(false)
-    }
-  }
 
   const handleSave = async () => {
     setSaving(true)
@@ -181,8 +159,7 @@ export default function DoctorProfile() {
         .update({
           name: formData.name,
           phone: formData.phone,
-          whatsapp: formData.whatsapp,
-          profile_image: formData.profile_image
+          whatsapp: formData.whatsapp
         })
         .eq('id', profile?.id)
 
@@ -202,11 +179,11 @@ export default function DoctorProfile() {
 
       if (doctorError) throw doctorError
 
-      toast.success('প্রোফাইল সফলভাবে আপডেট হয়েছে!')
+      toast.success('Profile updated successfully')
       window.location.reload()
     } catch (error) {
       console.error('Error saving profile:', error)
-      toast.error('প্রোফাইল আপডেট করতে সমস্যা হচ্ছে')
+      toast.error('Failed to update profile')
     } finally {
       setSaving(false)
     }
@@ -222,54 +199,13 @@ export default function DoctorProfile() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold text-text-dark mb-8">আমার প্রোফাইল</h1>
+      <h1 className="text-3xl font-bold text-text-dark mb-8">My Profile</h1>
 
       <div className="bg-white rounded-2xl border border-border overflow-hidden">
         <div className="p-6 space-y-6">
-          {/* Profile Picture Section */}
-          <div className="flex flex-col items-center sm:flex-row sm:items-start gap-6 pb-6 border-b border-border">
-            <div className="relative">
-              <div className="w-32 h-32 rounded-full overflow-hidden bg-teal-light flex items-center justify-center">
-                {formData.profile_image ? (
-                  <Image
-                    src={formData.profile_image}
-                    alt="Profile"
-                    width={128}
-                    height={128}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-5xl">👨‍⚕️</span>
-                )}
-              </div>
-              <label className="absolute bottom-0 right-0 bg-primary text-white p-2 rounded-full cursor-pointer hover:bg-primary-dark transition">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageUpload}
-                  className="hidden"
-                  disabled={uploadingImage}
-                />
-                {uploadingImage ? (
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                )}
-              </label>
-            </div>
-            <div className="text-center sm:text-left">
-              <h2 className="text-xl font-semibold text-teal-dark">{formData.name}</h2>
-              <p className="text-text-grey">{formData.email}</p>
-              <p className="text-sm text-primary mt-1">প্রোফাইল পিকচার আপডেট করতে ক্যামেরা আইকনে ক্লিক করুন</p>
-            </div>
-          </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-sm font-medium mb-1">পুরো নাম</label>
+              <label className="block text-sm font-medium mb-1">Full Name</label>
               <input
                 type="text"
                 value={formData.name}
@@ -279,7 +215,7 @@ export default function DoctorProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">ইমেইল</label>
+              <label className="block text-sm font-medium mb-1">Email</label>
               <input
                 type="email"
                 value={formData.email}
@@ -289,7 +225,7 @@ export default function DoctorProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">ফোন নম্বর</label>
+              <label className="block text-sm font-medium mb-1">Phone Number</label>
               <input
                 type="tel"
                 value={formData.phone}
@@ -299,7 +235,7 @@ export default function DoctorProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">হোয়াটসঅ্যাপ নম্বর</label>
+              <label className="block text-sm font-medium mb-1">WhatsApp Number</label>
               <input
                 type="tel"
                 value={formData.whatsapp}
@@ -309,13 +245,13 @@ export default function DoctorProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">বিশেষত্ব</label>
+              <label className="block text-sm font-medium mb-1">Speciality</label>
               <select
                 value={formData.speciality}
                 onChange={(e) => setFormData({...formData, speciality: e.target.value})}
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <option value="">বিশেষত্ব নির্বাচন করুন</option>
+                <option value="">Select Speciality</option>
                 {specialities.map((spec) => (
                   <option key={spec} value={spec}>{spec}</option>
                 ))}
@@ -323,13 +259,13 @@ export default function DoctorProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">ডিগ্রী</label>
+              <label className="block text-sm font-medium mb-1">Degree</label>
               <select
                 value={formData.degree}
                 onChange={(e) => setFormData({...formData, degree: e.target.value})}
                 className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
               >
-                <option value="">ডিগ্রী নির্বাচন করুন</option>
+                <option value="">Select Degree</option>
                 {degrees.map((deg) => (
                   <option key={deg} value={deg}>{deg}</option>
                 ))}
@@ -337,7 +273,7 @@ export default function DoctorProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">অভিজ্ঞতা (বছর)</label>
+              <label className="block text-sm font-medium mb-1">Experience (years)</label>
               <input
                 type="number"
                 value={formData.experience}
@@ -347,7 +283,7 @@ export default function DoctorProfile() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">পরামর্শ ফি (৳)</label>
+              <label className="block text-sm font-medium mb-1">Consultation Fee (৳)</label>
               <input
                 type="number"
                 value={formData.consultation_fee}
@@ -358,13 +294,13 @@ export default function DoctorProfile() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">পরিচয় (ইংরেজি)</label>
+            <label className="block text-sm font-medium mb-1">About (English)</label>
             <textarea
               value={formData.about}
               onChange={(e) => setFormData({...formData, about: e.target.value})}
               rows={4}
               className="w-full px-4 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
-              placeholder="আপনার অভিজ্ঞতা, বিশেষত্ব ইত্যাদি সম্পর্কে লিখুন"
+              placeholder="Write about your experience, speciality, etc."
             />
           </div>
         </div>
@@ -374,7 +310,7 @@ export default function DoctorProfile() {
             disabled={saving}
             className="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark disabled:opacity-50"
           >
-            {saving ? 'সংরক্ষণ হচ্ছে...' : 'পরিবর্তন সংরক্ষণ করুন'}
+            {saving ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </div>
